@@ -24,6 +24,7 @@ import { DiagnosisForm, EquipmentKey, FlowKey, RoastKey, SavedSuggestion, TasteK
 type AppStep = "diagnosis" | "suggestion" | "result";
 type UnknownTasteValue = TasteKey | "unknown";
 type ResultChoice = "better" | "slightly" | "opposite" | "unknown";
+type UnknownFollowUp = "sour_remain" | "bitter_remain" | "thin_feel" | "aroma_weak";
 
 const initialForm: DiagnosisForm = {
   taste: null,
@@ -131,6 +132,7 @@ export default function HomeScreen() {
   const [form, setForm] = useState<DiagnosisForm>(initialForm);
   const [showHelperTaste, setShowHelperTaste] = useState<boolean>(false);
   const [resultChoice, setResultChoice] = useState<ResultChoice | null>(null);
+  const [_resultFollowUp, setResultFollowUp] = useState<UnknownFollowUp | null>(null);
 
   const savedSuggestionsQuery = useQuery({
     queryKey: ["saved-suggestions"],
@@ -228,18 +230,31 @@ export default function HomeScreen() {
   const handleResultChoice = useCallback((value: ResultChoice) => {
     void Haptics.selectionAsync();
     setResultChoice(value);
+    setResultFollowUp(null);
+  }, []);
 
-    if (value === "slightly" || value === "opposite") {
-      setTimeout(() => {
-        setStep("diagnosis");
-      }, 500);
-    }
+  const handleResultFollowUp = useCallback((value: UnknownFollowUp) => {
+    void Haptics.selectionAsync();
+    setResultFollowUp(value);
+    const tasteMap: Record<UnknownFollowUp, TasteKey> = {
+      sour_remain: "sour",
+      bitter_remain: "bitter",
+      thin_feel: "thin",
+      aroma_weak: "thin",
+    };
+    setForm((current) => ({ ...current, taste: tasteMap[value] }));
+    setTimeout(() => {
+      setStep("diagnosis");
+      setResultChoice(null);
+      setResultFollowUp(null);
+    }, 800);
   }, []);
 
   const resetDiagnosis = useCallback(() => {
     void Haptics.selectionAsync();
     setStep("diagnosis");
     setResultChoice(null);
+    setResultFollowUp(null);
     setShowHelperTaste(false);
     setForm(initialForm);
   }, []);
@@ -388,7 +403,6 @@ export default function HomeScreen() {
             <View style={styles.stageContainer} testID="result-screen">
               <View style={styles.resultIntroCard}>
                 <Text style={styles.sectionTitle}>次の一杯はどうでしたか？</Text>
-                <Text style={styles.sectionDescription}>2タップ以内で終わるように、短く選べるようにしました。</Text>
               </View>
 
               <View style={styles.resultGrid}>
@@ -419,11 +433,12 @@ export default function HomeScreen() {
 
               {resultChoice === "better" ? (
                 <View style={styles.feedbackCard}>
-                  <Text style={styles.feedbackTitle}>やった！このレシピを保存しますか？</Text>
-                  <Text style={styles.feedbackText}>今の提案が合っていそうです。必要ならもう一度保存してください。</Text>
+                  <Text style={styles.feedbackTitle}>このレシピを保存しますか？</Text>
                   <PrimaryButton
-                    label="この提案を保存"
+                    label={saveMutation.isPending ? "保存中..." : "この提案を保存"}
                     onPress={handleSaveSuggestion}
+                    disabled={saveMutation.isPending}
+                    icon={<Save color="#FFF9F0" size={18} />}
                     testId="result-save"
                   />
                 </View>
@@ -432,26 +447,62 @@ export default function HomeScreen() {
               {resultChoice === "slightly" ? (
                 <View style={styles.feedbackCard}>
                   <Text style={styles.feedbackTitle}>もう一歩ですね。もう一回試してみましょう</Text>
-                  <Text style={styles.feedbackText}>診断画面に戻ります。条件を少し見直してみてください。</Text>
+                  <PrimaryButton
+                    label="診断画面に戻る"
+                    onPress={() => {
+                      setStep("diagnosis");
+                      setResultChoice(null);
+                    }}
+                    testId="slightly-back"
+                    subtle
+                  />
                 </View>
               ) : null}
 
               {resultChoice === "opposite" ? (
                 <View style={styles.feedbackCard}>
-                  <Text style={styles.feedbackTitle}>すみません、逆方向に動きました。もう一度診断しましょう</Text>
-                  <Text style={styles.feedbackText}>診断画面に戻ります。最初の印象から選び直せます。</Text>
+                  <Text style={styles.feedbackTitle}>すみません、逆方向に動いてしまいました</Text>
+                  <PrimaryButton
+                    label="診断画面に戻る"
+                    onPress={() => {
+                      setStep("diagnosis");
+                      setResultChoice(null);
+                    }}
+                    testId="opposite-back"
+                    subtle
+                  />
                 </View>
               ) : null}
 
               {resultChoice === "unknown" ? (
                 <View style={styles.feedbackCard}>
                   <Text style={styles.feedbackTitle}>何が気になりますか？</Text>
-                  <Text style={styles.feedbackText}>口がキュッとする / 後味が渋い / 水っぽい / 香りが弱い から近いものを選んで、もう一度診断してください。</Text>
-                  <PrimaryButton
-                    label="診断に戻る"
-                    onPress={() => setStep("diagnosis")}
-                    testId="back-to-diagnosis"
-                  />
+                  <View style={styles.resultGrid}>
+                    <PrimaryButton
+                      label="酸味が残る"
+                      onPress={() => handleResultFollowUp("sour_remain")}
+                      testId="followup-sour"
+                      subtle
+                    />
+                    <PrimaryButton
+                      label="苦味が残る"
+                      onPress={() => handleResultFollowUp("bitter_remain")}
+                      testId="followup-bitter"
+                      subtle
+                    />
+                    <PrimaryButton
+                      label="薄い感じがする"
+                      onPress={() => handleResultFollowUp("thin_feel")}
+                      testId="followup-thin"
+                      subtle
+                    />
+                    <PrimaryButton
+                      label="香りが弱い"
+                      onPress={() => handleResultFollowUp("aroma_weak")}
+                      testId="followup-aroma"
+                      subtle
+                    />
+                  </View>
                 </View>
               ) : null}
 
