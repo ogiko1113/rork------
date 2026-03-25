@@ -5,6 +5,11 @@
       "name": "次の一杯",
       "path": "expo",
       "framework": "react-native"
+    },
+    {
+      "name": "次の一杯",
+      "path": "expo",
+      "framework": "react-native"
     }
   ]
 }

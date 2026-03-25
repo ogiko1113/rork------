@@ -7,6 +7,7 @@ import {
   Alert,
   Pressable,
   SafeAreaView,
+  ScrollView,
   Share,
   StyleSheet,
   Text,
@@ -250,18 +251,25 @@ export default function HomeScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <LinearGradient colors={["#FCF8F3", "#F4E8D8"]} style={styles.backgroundGlow} />
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          <View style={styles.headerRow}>
-            <View>
-              <Text style={styles.eyebrow}>次の一杯</Text>
-              <Text style={styles.headerTitle}>今の一杯、どうでしたか？</Text>
-            </View>
-            <View style={styles.badge}>
-              <Coffee color={coffeeTheme.accentStrong} size={18} />
-              <Text style={styles.badgeText}>{savedCount}件保存</Text>
-            </View>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.eyebrow}>次の一杯</Text>
+            <Text style={styles.headerTitle}>
+              {step === "diagnosis" ? "今の一杯、どうでしたか？" : step === "suggestion" ? "提案" : "結果入力"}
+            </Text>
           </View>
+          <View style={styles.badge}>
+            <Coffee color={coffeeTheme.accentStrong} size={18} />
+            <Text style={styles.badgeText}>{savedCount}件保存</Text>
+          </View>
+        </View>
 
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           {step === "diagnosis" ? (
             <View style={styles.stageContainer} testID="diagnosis-screen">
               <SelectionCard
@@ -283,32 +291,27 @@ export default function HomeScreen() {
                 />
               ) : null}
 
-              <View style={styles.compactRow}>
-                <View style={styles.compactColumn}>
-                  <SelectionCard
-                    title="器具"
-                    options={equipmentOptions}
-                    selectedValue={form.equipment}
-                    onSelect={(value) => {
-                      void Haptics.selectionAsync();
-                      setForm((current) => ({ ...current, equipment: value as EquipmentKey }));
-                    }}
-                    testId="equipment-selector"
-                  />
-                </View>
-                <View style={styles.compactColumn}>
-                  <SelectionCard
-                    title="焙煎度"
-                    options={roastOptions}
-                    selectedValue={form.roast}
-                    onSelect={(value) => {
-                      void Haptics.selectionAsync();
-                      setForm((current) => ({ ...current, roast: value as RoastKey }));
-                    }}
-                    testId="roast-selector"
-                  />
-                </View>
-              </View>
+              <SelectionCard
+                title="器具"
+                options={equipmentOptions}
+                selectedValue={form.equipment}
+                onSelect={(value) => {
+                  void Haptics.selectionAsync();
+                  setForm((current) => ({ ...current, equipment: value as EquipmentKey }));
+                }}
+                testId="equipment-selector"
+              />
+
+              <SelectionCard
+                title="焙煎度"
+                options={roastOptions}
+                selectedValue={form.roast}
+                onSelect={(value) => {
+                  void Haptics.selectionAsync();
+                  setForm((current) => ({ ...current, roast: value as RoastKey }));
+                }}
+                testId="roast-selector"
+              />
 
               <SelectionCard
                 title="お湯が落ちるのは？"
@@ -458,7 +461,7 @@ export default function HomeScreen() {
               </Pressable>
             </View>
           ) : null}
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
@@ -475,17 +478,13 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: 18,
-    paddingTop: 12,
-    paddingBottom: 16,
-    gap: 14,
-  },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 8,
     gap: 12,
   },
   eyebrow: {
@@ -493,18 +492,18 @@ const styles = StyleSheet.create({
     color: coffeeTheme.textMuted,
     letterSpacing: 1.8,
     textTransform: "uppercase",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   headerTitle: {
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 24,
+    lineHeight: 30,
     color: coffeeTheme.text,
-    fontWeight: "700",
+    fontWeight: "700" as const,
     maxWidth: 250,
   },
   badge: {
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.72)",
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 12,
     paddingVertical: 10,
     flexDirection: "row",
@@ -515,25 +514,31 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "600" as const,
     color: coffeeTheme.accentStrong,
   },
-  stageContainer: {
+  scrollView: {
     flex: 1,
-    gap: 12,
+  },
+  scrollContent: {
+    paddingHorizontal: 18,
+    paddingTop: 6,
+    paddingBottom: 32,
+  },
+  stageContainer: {
+    gap: 14,
   },
   sectionCard: {
-    backgroundColor: "rgba(255,253,249,0.86)",
-    borderRadius: 24,
-    padding: 14,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 16,
     borderWidth: 1,
     borderColor: coffeeTheme.cardBorder,
     gap: 10,
-    flexShrink: 1,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 17,
+    fontWeight: "700" as const,
     color: coffeeTheme.text,
   },
   sectionDescription: {
@@ -541,20 +546,13 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     color: coffeeTheme.textMuted,
   },
-  compactRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  compactColumn: {
-    flex: 1,
-  },
   optionGrid: {
     gap: 8,
   },
   optionButton: {
     minHeight: 56,
-    borderRadius: 18,
-    backgroundColor: coffeeTheme.surface,
+    borderRadius: 16,
+    backgroundColor: coffeeTheme.background,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 1,
@@ -572,7 +570,7 @@ const styles = StyleSheet.create({
   },
   optionLabel: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "700" as const,
     color: coffeeTheme.text,
   },
   optionLabelSelected: {
@@ -596,7 +594,7 @@ const styles = StyleSheet.create({
     ...accentShadow,
   },
   secondaryButton: {
-    backgroundColor: coffeeTheme.surface,
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: coffeeTheme.cardBorder,
     shadowOpacity: 0,
@@ -616,21 +614,20 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "700" as const,
     color: "#FFF9F0",
   },
   secondaryButtonText: {
     color: coffeeTheme.accentStrong,
   },
   suggestionCard: {
-    flex: 1,
-    borderRadius: 30,
-    backgroundColor: coffeeTheme.surface,
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
     paddingVertical: 22,
     borderWidth: 1,
     borderColor: coffeeTheme.cardBorder,
-    justifyContent: "space-between",
+    gap: 12,
   },
   suggestionPill: {
     alignSelf: "flex-start",
@@ -644,15 +641,15 @@ const styles = StyleSheet.create({
   },
   suggestionPillText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: "600" as const,
     color: coffeeTheme.accentStrong,
   },
   suggestionText: {
-    fontSize: 34,
-    lineHeight: 42,
-    fontWeight: "800",
+    fontSize: 30,
+    lineHeight: 40,
+    fontWeight: "800" as const,
     color: coffeeTheme.text,
-    marginTop: 10,
+    marginTop: 4,
   },
   reasonText: {
     fontSize: 16,
@@ -662,13 +659,14 @@ const styles = StyleSheet.create({
   footnote: {
     fontSize: 13,
     color: coffeeTheme.textMuted,
+    marginTop: 4,
   },
   actionRow: {
     gap: 10,
   },
   resultIntroCard: {
-    backgroundColor: "rgba(255,253,249,0.82)",
-    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
     padding: 18,
     borderWidth: 1,
     borderColor: coffeeTheme.cardBorder,
@@ -678,17 +676,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   feedbackCard: {
-    backgroundColor: coffeeTheme.surface,
-    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
     padding: 18,
     borderWidth: 1,
     borderColor: coffeeTheme.cardBorder,
     gap: 10,
   },
   feedbackTitle: {
-    fontSize: 18,
+    fontSize: 17,
     lineHeight: 24,
-    fontWeight: "700",
+    fontWeight: "700" as const,
     color: coffeeTheme.text,
   },
   feedbackText: {
@@ -706,6 +704,6 @@ const styles = StyleSheet.create({
   inlineResetText: {
     fontSize: 14,
     color: coffeeTheme.textMuted,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
 });
