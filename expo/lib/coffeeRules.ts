@@ -94,24 +94,44 @@ export function getSuggestion(form: DiagnosisForm): SuggestionResult {
     };
   }
 
-  const exactRule =
-    form.equipment && form.roast && form.roast !== "unknown" && form.flow && form.flow !== "unknown" && form.flow !== "normal"
-      ? findExactRule({
-          equipment: form.equipment,
-          roast: form.roast,
-          taste,
-          flow: form.flow,
-        })
-      : undefined;
+  const equipment = form.equipment;
+  const roast = form.roast;
+  const flow = form.flow;
 
-  if (exactRule) {
-    console.log("[coffeeRules] exact rule matched", exactRule);
-    return {
-      suggestion: exactRule.suggestion,
-      reason: exactRule.reason,
-      matchedRule: exactRule,
-      fallbackType: "exact",
-    };
+  if (equipment && roast && roast !== "unknown" && flow && flow !== "unknown") {
+    const exactRule = findExactRule({ equipment, roast, taste, flow });
+    if (exactRule) {
+      console.log("[coffeeRules] exact rule matched", exactRule);
+      return {
+        suggestion: exactRule.suggestion,
+        reason: exactRule.reason,
+        matchedRule: exactRule,
+        fallbackType: "exact",
+      };
+    }
+  }
+
+  if (equipment && roast && roast !== "unknown") {
+    const normalRule = findExactRule({ equipment, roast, taste, flow: "normal" });
+    if (normalRule) {
+      console.log("[coffeeRules] normal-flow rule matched", normalRule);
+      return {
+        suggestion: normalRule.suggestion,
+        reason: normalRule.reason,
+        matchedRule: normalRule,
+        fallbackType: "exact",
+      };
+    }
+    const unknownFlowRule = findExactRule({ equipment, roast, taste, flow: "unknown" });
+    if (unknownFlowRule) {
+      console.log("[coffeeRules] unknown-flow rule matched", unknownFlowRule);
+      return {
+        suggestion: unknownFlowRule.suggestion,
+        reason: unknownFlowRule.reason,
+        matchedRule: unknownFlowRule,
+        fallbackType: "exact",
+      };
+    }
   }
 
   if (form.helperTaste === "aroma_weak") {
@@ -122,37 +142,39 @@ export function getSuggestion(form: DiagnosisForm): SuggestionResult {
     };
   }
 
-  const roastKey = form.roast ?? "unknown";
-  const generalByRoast = generalTasteSuggestion[taste][roastKey] ?? generalTasteSuggestion[taste].unknown;
+  const roastKey = roast ?? "unknown";
 
-  if (form.equipment === "hario_v60" || form.equipment === null) {
-    console.log("[coffeeRules] general roast fallback used", generalByRoast);
+  const otherRule = coffeeRules.find(
+    (r) => r.equipment === "other" && r.roast === roastKey && r.taste === taste
+  );
+  if (otherRule) {
+    console.log("[coffeeRules] 'other' equipment fallback matched", otherRule);
     return {
-      suggestion: generalByRoast.suggestion,
-      reason: generalByRoast.reason,
-      fallbackType: "general",
+      suggestion: otherRule.suggestion,
+      reason: otherRule.reason,
+      matchedRule: otherRule,
+      fallbackType: "equipment",
     };
   }
 
-  const equipmentFallback = taste === "bitter"
-    ? {
-        suggestion: "挽きを少し粗く",
-        reason: "器具が違っても、苦さが残るときは抽出を少し抑えるのが基本です",
-      }
-    : taste === "sour"
-      ? {
-          suggestion: "挽きを少し細かく",
-          reason: "酸っぱさが出るときは、まず抽出を少し進めるのが安全です",
-        }
-      : {
-          suggestion: "湯温を少し上げる",
-          reason: "薄いときは抽出の進み方を少しだけ強めると変化が見えやすいです",
-        };
+  const otherUnknownRoast = coffeeRules.find(
+    (r) => r.equipment === "other" && r.roast === "unknown" && r.taste === taste
+  );
+  if (otherUnknownRoast) {
+    console.log("[coffeeRules] 'other' unknown-roast fallback matched", otherUnknownRoast);
+    return {
+      suggestion: otherUnknownRoast.suggestion,
+      reason: otherUnknownRoast.reason,
+      matchedRule: otherUnknownRoast,
+      fallbackType: "equipment",
+    };
+  }
 
-  console.log("[coffeeRules] equipment fallback used", equipmentFallback);
+  const generalByRoast = generalTasteSuggestion[taste][roastKey] ?? generalTasteSuggestion[taste].unknown;
+  console.log("[coffeeRules] general roast fallback used", generalByRoast);
   return {
-    suggestion: equipmentFallback.suggestion,
-    reason: equipmentFallback.reason,
-    fallbackType: "equipment",
+    suggestion: generalByRoast.suggestion,
+    reason: generalByRoast.reason,
+    fallbackType: "general",
   };
 }

@@ -11,9 +11,9 @@ export type HelperTasteKey = TasteKey | "aroma_weak";
 
 export interface CoffeeRule {
   equipment: EquipmentKey;
-  roast: Exclude<RoastKey, "unknown">;
+  roast: RoastKey;
   taste: TasteKey;
-  flow: Exclude<FlowKey, "normal" | "unknown">;
+  flow: FlowKey;
   suggestion: string;
   reason: string;
 }
