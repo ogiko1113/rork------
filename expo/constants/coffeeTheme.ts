@@ -1,0 +1,15 @@
+export const coffeeTheme = {
+  background: "#FAF6F1",
+  surface: "#FFFDF9",
+  surfaceStrong: "#F2E8DB",
+  card: "#F7EFE5",
+  cardBorder: "#E7D8C5",
+  text: "#2F241C",
+  textMuted: "#776357",
+  accent: "#7A4B2A",
+  accentStrong: "#5C341B",
+  accentSoft: "#E7D7C4",
+  success: "#4D7A55",
+  warning: "#B66A38",
+  shadow: "rgba(74, 46, 28, 0.12)",
+} as const;

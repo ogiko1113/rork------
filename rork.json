@@ -1,0 +1,10 @@
+{
+  "$schema": "https://rork.com/schema/rork.json",
+  "apps": [
+    {
+      "name": "次の一杯",
+      "path": "expo",
+      "framework": "react-native"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "rules": [
+    {"equipment": "hario_v60", "roast": "light", "taste": "sour", "flow": "fast", "suggestion": "挽きを少し細かく", "reason": "水が速く通りすぎて抽出不足です"},
+    {"equipment": "hario_v60", "roast": "light", "taste": "sour", "flow": "slow", "suggestion": "湯温を少し上げる", "reason": "湯温が低く抽出が進んでいません"},
+    {"equipment": "hario_v60", "roast": "light", "taste": "bitter", "flow": "slow", "suggestion": "挽きを少し粗く", "reason": "抽出過多。水の通りを速くしましょう"},
+    {"equipment": "hario_v60", "roast": "light", "taste": "bitter", "flow": "fast", "suggestion": "湯温を下げる（90℃前後へ）", "reason": "浅煎りは温度に敏感です"},
+    {"equipment": "hario_v60", "roast": "medium", "taste": "sour", "flow": "fast", "suggestion": "挽きを少し細かく", "reason": "抽出不足。もう少し成分を引き出しましょう"},
+    {"equipment": "hario_v60", "roast": "medium", "taste": "bitter", "flow": "slow", "suggestion": "挽きを粗く + 注湯を速く", "reason": "抽出過多。水の滞留時間を短く"},
+    {"equipment": "hario_v60", "roast": "dark", "taste": "bitter", "flow": "slow", "suggestion": "挽きを粗く + 湯温を下げる", "reason": "深煎りの苦味は焙煎由来もありますが、まず抽出を控えましょう"},
+    {"equipment": "hario_v60", "roast": "dark", "taste": "thin", "flow": "fast", "suggestion": "粉量を増やす（+2g）", "reason": "コーヒーの成分が少ないです"},
+    {"equipment": "hario_v60", "roast": "medium", "taste": "thin", "flow": "fast", "suggestion": "挽きを細かく + 粉量を増やす", "reason": "抽出不足と粉量不足の両方が考えられます"},
+    {"equipment": "hario_v60", "roast": "dark", "taste": "sour", "flow": "fast", "suggestion": "湯温を上げる（92℃以上へ）", "reason": "深煎りでも湯温が低すぎると酸味が出ます"}
+  ]
+}
