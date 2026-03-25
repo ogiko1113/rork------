@@ -264,7 +264,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.screen}>
       <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient colors={["#FCF8F3", "#F4E8D8"]} style={styles.backgroundGlow} />
+      <LinearGradient colors={["#FCF8F3", "#F4E8D8"]} style={styles.backgroundGlow} pointerEvents="none" />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.headerRow}>
           <View>
@@ -525,6 +525,7 @@ const styles = StyleSheet.create({
   },
   backgroundGlow: {
     ...StyleSheet.absoluteFillObject,
+    zIndex: -1,
   },
   safeArea: {
     flex: 1,
