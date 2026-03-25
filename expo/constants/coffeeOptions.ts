@@ -25,15 +25,15 @@ export const tasteOptions: Option<TasteKey | "unknown">[] = [
   {
     value: "unknown",
     label: "よく分からない",
-    description: "気になる感覚をもう少し選んでください",
+    description: "どれにも当てはまらないとき",
   },
 ];
 
 export const helperTasteOptions: Option<HelperTasteKey>[] = [
-  { value: "sour", label: "口がキュッとする？" },
-  { value: "bitter", label: "後味が渋い？" },
-  { value: "thin", label: "水っぽい？" },
-  { value: "aroma_weak", label: "香りが弱い？" },
+  { value: "sour", label: "口がキュッとする" },
+  { value: "bitter", label: "後味が渋い" },
+  { value: "thin", label: "水っぽい" },
+  { value: "aroma_weak", label: "香りが弱い" },
 ];
 
 export const equipmentOptions: Option<EquipmentKey>[] = [
