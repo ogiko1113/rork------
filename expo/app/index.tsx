@@ -5,10 +5,12 @@ import { Stack } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   Alert,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
   Share,
+  StatusBar,
   StyleSheet,
   Text,
   View,
@@ -529,6 +531,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
   headerRow: {
     flexDirection: "row",
