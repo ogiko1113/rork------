@@ -6,56 +6,56 @@ const coffeeRules = (rulesJson as CoffeeRulesJson).rules;
 const generalTasteSuggestion: Record<TasteKey, Record<string, { suggestion: string; reason: string }>> = {
   sour: {
     light: {
-      suggestion: "挽きを少し細かくしてみてください",
-      reason: "酸味が強いときは、挽きを細かくして抽出を進めるのが基本です",
+      suggestion: "挽きを少し細かく",
+      reason: "浅煎りの酸っぱさは抽出不足になりやすいです",
     },
     medium: {
-      suggestion: "挽きを少し細かくしてみてください",
-      reason: "もう少し成分を引き出すと酸味が和らいで甘さが出ます",
+      suggestion: "挽きを少し細かく",
+      reason: "成分をもう少し引き出すと味がまとまりやすくなります",
     },
     dark: {
-      suggestion: "挽きを少し細かくしてみてください",
-      reason: "深煎りで酸味が出るのは抽出不足のサインです",
+      suggestion: "湯温を上げる（92℃以上へ）",
+      reason: "深煎りでも温度が低いと酸味が前に出ます",
     },
     unknown: {
-      suggestion: "挽きを少し細かくしてみてください",
-      reason: "酸味が強いときは、まず挽きを細かくするのが基本です",
+      suggestion: "挽きを少し細かく",
+      reason: "まずは抽出量を少し増やして味の芯を探しましょう",
     },
   },
   bitter: {
     light: {
-      suggestion: "お湯の温度を少し下げてみてください（88℃くらい）",
-      reason: "浅煎りは温度が高すぎると渋みが出やすいです",
+      suggestion: "湯温を下げる（90℃前後へ）",
+      reason: "浅煎りは温度の影響を受けやすく、苦さが立つことがあります",
     },
     medium: {
-      suggestion: "挽きを少し粗くしてみてください",
-      reason: "苦味が強いときは、挽きを粗くして抽出を抑えましょう",
+      suggestion: "挽きを少し粗く",
+      reason: "苦さが残るときは抽出を少しだけ抑えるのが安全です",
     },
     dark: {
-      suggestion: "お湯の温度を下げてみてください（83℃くらい）",
-      reason: "深煎りの苦味は温度を下げると和らぎます",
+      suggestion: "挽きを少し粗く",
+      reason: "深煎りは過抽出で重さと渋さが出やすいです",
     },
     unknown: {
-      suggestion: "挽きを少し粗くしてみてください",
-      reason: "苦味が強いときは、まず挽きを粗くするのが基本です",
+      suggestion: "湯温を少し下げる",
+      reason: "まずは苦みの出方を穏やかにしてバランスを見ましょう",
     },
   },
   thin: {
     light: {
-      suggestion: "粉の量を2g増やしてみてください",
-      reason: "コーヒーの成分が足りていません。粉を増やすのが一番確実です",
+      suggestion: "粉量を増やす（+2g）",
+      reason: "成分量が足りず、味が水っぽく感じやすいです",
     },
     medium: {
-      suggestion: "粉の量を2g増やしてみてください",
-      reason: "コーヒーの成分をもう少し増やしましょう",
+      suggestion: "挽きを細かく + 粉量を増やす",
+      reason: "濃度と抽出量の両方を少し上げると改善しやすいです",
     },
     dark: {
-      suggestion: "粉の量を2g増やしてみてください",
-      reason: "粉の量で味の濃さを調整しましょう",
+      suggestion: "粉量を増やす（+2g）",
+      reason: "深煎りでも薄いときはまず粉量を見直すのが確実です",
     },
     unknown: {
-      suggestion: "粉の量を2g増やしてみてください",
-      reason: "薄いときは粉を増やすのが一番確実です",
+      suggestion: "粉量を増やす（+2g）",
+      reason: "まずはコーヒー成分の総量を少し増やしてみましょう",
     },
   },
 };
