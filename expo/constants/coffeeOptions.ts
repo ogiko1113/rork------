@@ -29,11 +29,12 @@ export const tasteOptions: Option<TasteKey | "unknown">[] = [
   },
 ];
 
-export const helperTasteOptions: Option<HelperTasteKey>[] = [
+export const helperTasteOptions: Option<HelperTasteKey | "none">[] = [
   { value: "sour", label: "口がキュッとする" },
   { value: "bitter", label: "後味が渋い" },
   { value: "thin", label: "水っぽい" },
   { value: "aroma_weak", label: "香りが弱い" },
+  { value: "none", label: "どれも当てはまらない" },
 ];
 
 export const equipmentOptions: Option<EquipmentKey>[] = [
@@ -57,3 +58,14 @@ export const flowOptions: Option<FlowKey>[] = [
   { value: "slow", label: "遅かった" },
   { value: "unknown", label: "分からない" },
 ];
+
+export const tempPresets = [
+  { value: 80, label: "80℃" },
+  { value: 85, label: "85℃" },
+  { value: 90, label: "90℃" },
+  { value: 95, label: "95℃" },
+] as const;
+
+export const TEMP_BOILING = 100;
+export const TEMP_MIN = 60;
+export const TEMP_MAX = 100;

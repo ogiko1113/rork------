@@ -2,9 +2,11 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack } from "expo-router";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
+  Keyboard,
   Platform,
   Pressable,
   SafeAreaView,
@@ -13,20 +15,40 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
-import { Coffee, Droplets, RotateCcw, Save, Share2, Sparkles } from "lucide-react-native";
+import { ChevronLeft, Coffee, Droplets, RotateCcw, Save, Share2, Sparkles } from "lucide-react-native";
 
-import { equipmentOptions, flowOptions, helperTasteOptions, roastOptions, tasteOptions } from "@/constants/coffeeOptions";
+import {
+  equipmentOptions,
+  flowOptions,
+  helperTasteOptions,
+  roastOptions,
+  tasteOptions,
+  tempPresets,
+  TEMP_BOILING,
+  TEMP_MAX,
+  TEMP_MIN,
+} from "@/constants/coffeeOptions";
 import { coffeeTheme } from "@/constants/coffeeTheme";
-import { getSuggestion } from "@/lib/coffeeRules";
-import { getSavedSuggestions, saveSuggestionRecord } from "@/lib/storage";
-import { DiagnosisForm, EquipmentKey, FlowKey, RoastKey, SavedSuggestion, TasteKey } from "@/types/coffee";
+import { getSuggestion, getTempRange } from "@/lib/coffeeRules";
+import { getSavedSuggestions, getUserSettings, saveBrewRecord, saveDiagnosisMode } from "@/lib/storage";
+import {
+  BrewRecord,
+  DiagnosisForm,
+  DiagnosisMode,
+  EquipmentKey,
+  FlowKey,
+  HelperTasteKey,
+  RoastKey,
+  TasteKey,
+} from "@/types/coffee";
 
 type AppStep = "diagnosis" | "suggestion" | "result";
+type DiagnosisStep = 1 | 2 | 3 | 4 | 5;
 type UnknownTasteValue = TasteKey | "unknown";
-type ResultChoice = "better" | "slightly" | "opposite" | "unknown";
-type UnknownFollowUp = "sour_remain" | "bitter_remain" | "thin_feel" | "aroma_weak";
+type ResultChoice = "improved" | "still_off" | "reversed" | "unclear";
 
 const initialForm: DiagnosisForm = {
   taste: null,
@@ -34,6 +56,9 @@ const initialForm: DiagnosisForm = {
   equipment: null,
   roast: null,
   flow: null,
+  temp: null,
+  tempRange: "unknown",
+  mode: "normal",
 };
 
 const buttonHeight = 58;
@@ -44,6 +69,8 @@ const accentShadow = {
   shadowRadius: 20,
   elevation: 6,
 };
+
+// --- Reusable Components ---
 
 function SelectionCard<T extends string>({
   title,
@@ -129,12 +156,29 @@ function PrimaryButton({
   );
 }
 
+// --- Main Screen ---
+
 export default function HomeScreen() {
   const [step, setStep] = useState<AppStep>("diagnosis");
+  const [diagStep, setDiagStep] = useState<DiagnosisStep>(1);
+  const [showHelperTaste, setShowHelperTaste] = useState(false);
   const [form, setForm] = useState<DiagnosisForm>(initialForm);
-  const [showHelperTaste, setShowHelperTaste] = useState<boolean>(false);
+  const [mode, setMode] = useState<DiagnosisMode>("normal");
+  const [tempInput, setTempInput] = useState("");
+  const [tempError, setTempError] = useState<string | null>(null);
   const [resultChoice, setResultChoice] = useState<ResultChoice | null>(null);
-  const [_resultFollowUp, setResultFollowUp] = useState<UnknownFollowUp | null>(null);
+  const [lastBrewId, setLastBrewId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Load saved mode on mount
+  useEffect(() => {
+    getUserSettings().then((s) => {
+      setMode(s.diagnosisMode);
+      setForm((f) => ({ ...f, mode: s.diagnosisMode }));
+    });
+  }, []);
 
   const savedSuggestionsQuery = useQuery({
     queryKey: ["saved-suggestions"],
@@ -142,7 +186,7 @@ export default function HomeScreen() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: saveSuggestionRecord,
+    mutationFn: saveBrewRecord,
     onSuccess: async () => {
       await savedSuggestionsQuery.refetch();
       Alert.alert("保存しました", "提案と条件をこの端末に保存しました");
@@ -154,114 +198,302 @@ export default function HomeScreen() {
 
   const suggestion = useMemo(() => getSuggestion(form), [form]);
 
-  const canProceed = Boolean(form.taste && form.equipment && form.roast && form.flow);
+  // --- Diagnosis Step Helpers ---
+
+  const maxDiagStep: DiagnosisStep = mode === "detailed" ? 5 : 4;
+
+  const shouldSkipFlow = form.equipment === "french_press";
+
+  const getEffectiveMaxStep = useCallback((): DiagnosisStep => {
+    if (mode === "normal") {
+      return shouldSkipFlow ? 3 : 4;
+    }
+    return shouldSkipFlow ? 4 : 5;
+  }, [mode, shouldSkipFlow]);
+
+  const canGoNext = useCallback((): boolean => {
+    switch (diagStep) {
+      case 1:
+        return showHelperTaste ? form.helperTaste !== null : form.taste !== null;
+      case 2:
+        return form.equipment !== null;
+      case 3:
+        return form.roast !== null;
+      case 4:
+        if (shouldSkipFlow && mode === "normal") return false; // shouldn't be here
+        if (shouldSkipFlow && mode === "detailed") return true; // temp step - always ok (can be unknown)
+        return form.flow !== null;
+      case 5:
+        return true; // temp is optional
+      default:
+        return false;
+    }
+  }, [diagStep, form, showHelperTaste, shouldSkipFlow, mode]);
+
+  const goNextStep = useCallback(() => {
+    void Haptics.selectionAsync();
+    const effective = getEffectiveMaxStep();
+    if (diagStep >= effective) {
+      // Submit diagnosis
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setStep("suggestion");
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      return;
+    }
+
+    let next = (diagStep + 1) as DiagnosisStep;
+    // Skip flow step for french press
+    if (next === 4 && shouldSkipFlow && mode === "normal") {
+      // go straight to submit
+      setForm((f) => ({ ...f, flow: "unknown" }));
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setStep("suggestion");
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      return;
+    }
+    if (next === 4 && shouldSkipFlow && mode === "detailed") {
+      // skip flow, go to temp
+      setForm((f) => ({ ...f, flow: "unknown" }));
+      next = 5 as DiagnosisStep;
+    }
+
+    setDiagStep(next);
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, [diagStep, getEffectiveMaxStep, shouldSkipFlow, mode]);
+
+  const goPrevStep = useCallback(() => {
+    void Haptics.selectionAsync();
+    if (diagStep === 1) return;
+
+    let prev = (diagStep - 1) as DiagnosisStep;
+    // Skip flow step going back for french press
+    if (prev === 4 && shouldSkipFlow) {
+      prev = 3 as DiagnosisStep;
+    }
+
+    if (prev === 1 && showHelperTaste) {
+      // stay on step 1 but we're in helper mode, that's fine
+    }
+
+    setDiagStep(prev);
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, [diagStep, shouldSkipFlow, showHelperTaste]);
+
+  // --- Handlers ---
 
   const handleTasteSelect = useCallback((value: UnknownTasteValue) => {
     void Haptics.selectionAsync();
     if (value === "unknown") {
       setShowHelperTaste(true);
-      setForm((current) => ({
-        ...current,
-        taste: null,
-        helperTaste: null,
-      }));
+      setForm((f) => ({ ...f, taste: null, helperTaste: null }));
       return;
     }
-
     setShowHelperTaste(false);
-    setForm((current) => ({
-      ...current,
-      taste: value,
-      helperTaste: value,
-    }));
+    setForm((f) => ({ ...f, taste: value, helperTaste: value }));
   }, []);
 
-  const handleHelperSelect = useCallback((value: DiagnosisForm["helperTaste"]) => {
+  const handleHelperSelect = useCallback((value: HelperTasteKey | "none") => {
     void Haptics.selectionAsync();
-    setForm((current) => ({
-      ...current,
+    if (value === "none") {
+      // "unclear" maps to fallback-004
+      setForm((f) => ({ ...f, helperTaste: null, taste: null }));
+      // Proceed with taste = null, will hit fallback
+      setShowHelperTaste(false);
+      // Set a special flag so we know it's "unclear"
+      setForm((f) => ({ ...f, taste: "thin" as TasteKey, helperTaste: null }));
+      return;
+    }
+    const tasteMap: Record<HelperTasteKey, TasteKey> = {
+      sour: "sour",
+      bitter: "bitter",
+      thin: "thin",
+      aroma_weak: "thin",
+    };
+    setForm((f) => ({
+      ...f,
       helperTaste: value,
-      taste: value === "aroma_weak" ? "thin" : value,
+      taste: tasteMap[value],
     }));
   }, []);
 
-  const handleDiagnosisSubmit = useCallback(() => {
-    if (!canProceed) {
-      Alert.alert("あと少しです", "味・器具・焙煎度・お湯の落ち方を選んでください");
+  const handleTempPreset = useCallback((celsius: number) => {
+    void Haptics.selectionAsync();
+    setTempInput(String(celsius));
+    setTempError(null);
+    setForm((f) => ({ ...f, temp: celsius, tempRange: getTempRange(celsius) }));
+  }, []);
+
+  const handleTempInputChange = useCallback((text: string) => {
+    setTempInput(text);
+    const num = parseInt(text, 10);
+    if (text === "") {
+      setTempError(null);
+      setForm((f) => ({ ...f, temp: null, tempRange: "unknown" }));
       return;
     }
-
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setStep("suggestion");
-  }, [canProceed]);
-
-  const handleSaveSuggestion = useCallback(() => {
-    if (!form.taste || !form.equipment || !form.roast || !form.flow) {
+    if (isNaN(num) || num < TEMP_MIN || num > TEMP_MAX) {
+      setTempError(`${TEMP_MIN}〜${TEMP_MAX}の範囲で入力してください`);
       return;
     }
+    setTempError(null);
+    setForm((f) => ({ ...f, temp: num, tempRange: getTempRange(num) }));
+  }, []);
 
-    const record: SavedSuggestion = {
+  const handleTempUnknown = useCallback(() => {
+    void Haptics.selectionAsync();
+    setTempInput("");
+    setTempError(null);
+    setForm((f) => ({ ...f, temp: null, tempRange: "unknown" }));
+  }, []);
+
+  const showToast = useCallback((message: string) => {
+    setToastMessage(message);
+    toastOpacity.setValue(0);
+    Animated.sequence([
+      Animated.timing(toastOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.delay(1100),
+      Animated.timing(toastOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+    ]).start(() => setToastMessage(null));
+  }, [toastOpacity]);
+
+  const handleModeToggle = useCallback(() => {
+    const next: DiagnosisMode = mode === "normal" ? "detailed" : "normal";
+    setMode(next);
+    setForm((f) => ({ ...f, mode: next }));
+    if (next === "normal") {
+      setForm((f) => ({ ...f, temp: null, tempRange: "unknown" }));
+      setTempInput("");
+      setTempError(null);
+    }
+    void Haptics.selectionAsync();
+    void saveDiagnosisMode(next);
+    showToast(next === "detailed" ? "くわしく診断に切り替えました" : "かんたん診断に切り替えました");
+  }, [mode, showToast]);
+
+  const handleSave = useCallback(() => {
+    if (!form.taste || !form.equipment || !form.roast) return;
+
+    const record: BrewRecord = {
       id: `${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      suggestion: suggestion.suggestion,
-      reason: suggestion.reason,
-      taste: form.taste,
       equipment: form.equipment,
       roast: form.roast,
-      flow: form.flow,
+      taste: form.taste,
+      flow: form.flow ?? "unknown",
+      temp: form.temp,
+      tempRange: form.tempRange,
+      mode: form.mode,
+      suggestion: suggestion.suggestion,
+      reason: suggestion.reason,
+      result: null,
+      previousBrewId: lastBrewId,
+      createdAt: new Date().toISOString(),
     };
 
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     saveMutation.mutate(record);
-  }, [form.equipment, form.flow, form.roast, form.taste, saveMutation, suggestion.reason, suggestion.suggestion]);
+    setLastBrewId(record.id);
+  }, [form, suggestion, saveMutation, lastBrewId]);
 
   const handleShareFallback = useCallback(async () => {
-    const shareMessage = `次の一杯\n提案: ${suggestion.suggestion}\n理由: ${suggestion.reason}\n\n味: ${form.taste ?? "未選択"}\n器具: ${form.equipment ?? "未選択"}\n焙煎度: ${form.roast ?? "未選択"}\nお湯: ${form.flow ?? "未選択"}`;
-
+    const msg = `次の一杯\n提案: ${suggestion.suggestion}\n理由: ${suggestion.reason}`;
     try {
-      await Share.share({
-        message: shareMessage,
-        title: "次の一杯の提案",
-      });
-    } catch (error) {
-      console.log("[share] failed", error);
-      Alert.alert("共有できませんでした", "この環境ではスクリーンショット保存の代わりに共有を案内しています");
+      await Share.share({ message: msg, title: "次の一杯の提案" });
+    } catch {
+      Alert.alert("共有できませんでした");
     }
-  }, [form.equipment, form.flow, form.roast, form.taste, suggestion.reason, suggestion.suggestion]);
+  }, [suggestion]);
 
-  const handleResultChoice = useCallback((value: ResultChoice) => {
-    void Haptics.selectionAsync();
-    setResultChoice(value);
-    setResultFollowUp(null);
-  }, []);
+  const handleResultChoice = useCallback(
+    (value: ResultChoice) => {
+      void Haptics.selectionAsync();
+      setResultChoice(value);
 
-  const handleResultFollowUp = useCallback((value: UnknownFollowUp) => {
-    void Haptics.selectionAsync();
-    setResultFollowUp(value);
-    const tasteMap: Record<UnknownFollowUp, TasteKey> = {
-      sour_remain: "sour",
-      bitter_remain: "bitter",
-      thin_feel: "thin",
-      aroma_weak: "thin",
-    };
-    setForm((current) => ({ ...current, taste: tasteMap[value] }));
-    setTimeout(() => {
-      setStep("diagnosis");
-      setResultChoice(null);
-      setResultFollowUp(null);
-    }, 800);
-  }, []);
+      if (value === "improved") {
+        // Show save prompt — handled in render
+        return;
+      }
+
+      if (value === "still_off") {
+        // Back to diagnosis with previous inputs preserved
+        setTimeout(() => {
+          setStep("diagnosis");
+          setDiagStep(1);
+          setResultChoice(null);
+          scrollRef.current?.scrollTo({ y: 0, animated: false });
+        }, 600);
+        return;
+      }
+
+      if (value === "reversed") {
+        // Reset all inputs
+        setTimeout(() => {
+          setForm({ ...initialForm, mode });
+          setDiagStep(1);
+          setShowHelperTaste(false);
+          setTempInput("");
+          setTempError(null);
+          setStep("diagnosis");
+          setResultChoice(null);
+          setLastBrewId(null);
+          scrollRef.current?.scrollTo({ y: 0, animated: false });
+        }, 600);
+        return;
+      }
+
+      // "unclear" — show follow-up in render
+    },
+    [mode]
+  );
+
+  const handleResultFollowUp = useCallback(
+    (taste: TasteKey) => {
+      void Haptics.selectionAsync();
+      setForm((f) => ({ ...f, taste }));
+      setTimeout(() => {
+        setStep("diagnosis");
+        setDiagStep(1);
+        setResultChoice(null);
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+      }, 800);
+    },
+    []
+  );
 
   const resetDiagnosis = useCallback(() => {
     void Haptics.selectionAsync();
+    setForm({ ...initialForm, mode });
+    setDiagStep(1);
+    setShowHelperTaste(false);
+    setTempInput("");
+    setTempError(null);
     setStep("diagnosis");
     setResultChoice(null);
-    setResultFollowUp(null);
-    setShowHelperTaste(false);
-    setForm(initialForm);
-  }, []);
+    setLastBrewId(null);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [mode]);
 
   const savedCount = savedSuggestionsQuery.data?.length ?? 0;
+
+  // --- Diagnosis Step Labels ---
+  const diagStepLabel = (() => {
+    switch (diagStep) {
+      case 1:
+        return showHelperTaste ? "こんな感じはありますか？" : "今のコーヒー、何が気になりますか？";
+      case 2:
+        return "使っている器具は？";
+      case 3:
+        return "豆の焙煎度は？";
+      case 4:
+        return shouldSkipFlow ? "お湯の温度は？" : "お湯が落ちるのは？";
+      case 5:
+        return "お湯の温度は？";
+      default:
+        return "";
+    }
+  })();
+
+  const effectiveMax = getEffectiveMaxStep();
+  const isLastDiagStep = diagStep >= effectiveMax;
 
   return (
     <View style={styles.screen}>
@@ -281,78 +513,202 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Mode label + toggle - diagnosis only */}
+        {step === "diagnosis" ? (
+          <View style={styles.modeRow}>
+            <Text style={[styles.modeLabel, mode === "detailed" ? styles.modeLabelDetailed : null]}>
+              {mode === "normal" ? "かんたん診断" : "くわしく診断"}
+            </Text>
+            <Pressable onPress={handleModeToggle} testID="mode-toggle">
+              <Text style={styles.modeToggleText}>
+                {mode === "normal" ? "もっと正確に診断する ＞" : "かんたん診断に戻す ＞"}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {/* Toast */}
+        {toastMessage ? (
+          <Animated.View style={[styles.toast, { opacity: toastOpacity }]} pointerEvents="none">
+            <Text style={styles.toastText}>{toastMessage}</Text>
+          </Animated.View>
+        ) : null}
+
         <ScrollView
+          ref={scrollRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          {/* ===== DIAGNOSIS ===== */}
           {step === "diagnosis" ? (
             <View style={styles.stageContainer} testID="diagnosis-screen">
-              <SelectionCard
-                title="味の印象"
-                options={tasteOptions}
-                selectedValue={showHelperTaste ? "unknown" : form.taste}
-                onSelect={handleTasteSelect}
-                testId="taste-selector"
-              />
+              {/* Progress */}
+              <View style={styles.progressRow}>
+                <Text style={styles.progressText}>
+                  ステップ {diagStep} / {effectiveMax}
+                </Text>
+              </View>
 
-              {showHelperTaste ? (
+              {/* Back button */}
+              {diagStep > 1 ? (
+                <Pressable onPress={goPrevStep} style={styles.backButton} testID="diag-back">
+                  <ChevronLeft color={coffeeTheme.textMuted} size={20} />
+                  <Text style={styles.backButtonText}>戻る</Text>
+                </Pressable>
+              ) : null}
+
+              {/* Step 1: Taste */}
+              {diagStep === 1 && !showHelperTaste ? (
                 <SelectionCard
-                  title="何が近いですか？"
+                  title={diagStepLabel}
+                  options={tasteOptions}
+                  selectedValue={form.taste ?? (showHelperTaste ? ("unknown" as TasteKey) : null)}
+                  onSelect={handleTasteSelect}
+                  testId="taste-selector"
+                />
+              ) : null}
+
+              {/* Step 1b: Helper taste */}
+              {diagStep === 1 && showHelperTaste ? (
+                <SelectionCard
+                  title={diagStepLabel}
                   description="迷うときは、最も気になった感覚を1つ選んでください"
                   options={helperTasteOptions}
-                  selectedValue={form.helperTaste}
+                  selectedValue={(form.helperTaste ?? null) as (HelperTasteKey | "none") | null}
                   onSelect={handleHelperSelect}
                   testId="helper-selector"
                 />
               ) : null}
 
-              <SelectionCard
-                title="器具"
-                options={equipmentOptions}
-                selectedValue={form.equipment}
-                onSelect={(value) => {
-                  void Haptics.selectionAsync();
-                  setForm((current) => ({ ...current, equipment: value as EquipmentKey }));
-                }}
-                testId="equipment-selector"
-              />
+              {/* Step 2: Equipment */}
+              {diagStep === 2 ? (
+                <SelectionCard
+                  title={diagStepLabel}
+                  options={equipmentOptions}
+                  selectedValue={form.equipment}
+                  onSelect={(value) => {
+                    void Haptics.selectionAsync();
+                    setForm((f) => ({ ...f, equipment: value as EquipmentKey }));
+                  }}
+                  testId="equipment-selector"
+                />
+              ) : null}
 
-              <SelectionCard
-                title="焙煎度"
-                options={roastOptions}
-                selectedValue={form.roast}
-                onSelect={(value) => {
-                  void Haptics.selectionAsync();
-                  setForm((current) => ({ ...current, roast: value as RoastKey }));
-                }}
-                testId="roast-selector"
-              />
+              {/* Step 3: Roast */}
+              {diagStep === 3 ? (
+                <SelectionCard
+                  title={diagStepLabel}
+                  options={roastOptions}
+                  selectedValue={form.roast}
+                  onSelect={(value) => {
+                    void Haptics.selectionAsync();
+                    setForm((f) => ({ ...f, roast: value as RoastKey }));
+                  }}
+                  testId="roast-selector"
+                />
+              ) : null}
 
-              <SelectionCard
-                title="お湯が落ちるのは？"
-                options={flowOptions}
-                selectedValue={form.flow}
-                onSelect={(value) => {
-                  void Haptics.selectionAsync();
-                  setForm((current) => ({ ...current, flow: value as FlowKey }));
-                }}
-                testId="flow-selector"
-              />
+              {/* Step 4: Flow (skipped for french press in normal mode) */}
+              {diagStep === 4 && !shouldSkipFlow ? (
+                <SelectionCard
+                  title={diagStepLabel}
+                  options={flowOptions}
+                  selectedValue={form.flow}
+                  onSelect={(value) => {
+                    void Haptics.selectionAsync();
+                    setForm((f) => ({ ...f, flow: value as FlowKey }));
+                  }}
+                  testId="flow-selector"
+                />
+              ) : null}
 
+              {/* Step 4 (french press detailed) or Step 5: Temp input */}
+              {((diagStep === 4 && shouldSkipFlow && mode === "detailed") ||
+                (diagStep === 5 && mode === "detailed")) ? (
+                <View style={styles.sectionCard} testID="temp-input">
+                  <Text style={styles.sectionTitle}>{diagStepLabel}</Text>
+
+                  {/* Presets */}
+                  <View style={styles.tempPresetRow}>
+                    {tempPresets.map((p) => {
+                      const selected = form.temp === p.value;
+                      return (
+                        <Pressable
+                          key={p.value}
+                          onPress={() => handleTempPreset(p.value)}
+                          style={[styles.tempPresetButton, selected ? styles.optionButtonSelected : null]}
+                          testID={`temp-${p.value}`}
+                        >
+                          <Text style={[styles.tempPresetText, selected ? styles.optionLabelSelected : null]}>
+                            {p.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+
+                  {/* Boiling */}
+                  <Pressable
+                    onPress={() => handleTempPreset(TEMP_BOILING)}
+                    style={[
+                      styles.boilingButton,
+                      form.temp === TEMP_BOILING ? styles.optionButtonSelected : null,
+                    ]}
+                    testID="temp-boiling"
+                  >
+                    <Text
+                      style={[
+                        styles.optionLabel,
+                        form.temp === TEMP_BOILING ? styles.optionLabelSelected : null,
+                      ]}
+                    >
+                      沸騰直後
+                    </Text>
+                  </Pressable>
+
+                  {/* Free input */}
+                  <View style={styles.tempInputRow}>
+                    <TextInput
+                      style={styles.tempTextInput}
+                      value={tempInput}
+                      onChangeText={handleTempInputChange}
+                      keyboardType="numeric"
+                      placeholder="温度を入力（60〜100）"
+                      placeholderTextColor={coffeeTheme.textMuted}
+                      maxLength={3}
+                      returnKeyType="done"
+                      onSubmitEditing={() => Keyboard.dismiss()}
+                      testID="temp-free-input"
+                    />
+                    <Text style={styles.tempUnit}>℃</Text>
+                  </View>
+                  {tempError ? <Text style={styles.tempErrorText}>{tempError}</Text> : null}
+
+                  {/* Unknown link */}
+                  <Pressable onPress={handleTempUnknown} testID="temp-unknown">
+                    <Text style={styles.textLink}>分からない</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
+              {/* Next / Submit button */}
               <PrimaryButton
-                label="次の一杯を直す"
-                onPress={handleDiagnosisSubmit}
-                disabled={!canProceed}
-                icon={<Sparkles color="#FFF9F0" size={18} />}
-                testId="go-to-suggestion"
+                label={isLastDiagStep ? "次の一杯を直す" : "次へ"}
+                onPress={goNextStep}
+                disabled={!canGoNext() && !isLastDiagStep}
+                icon={isLastDiagStep ? <Sparkles color="#FFF9F0" size={18} /> : undefined}
+                testId="diag-next"
               />
             </View>
           ) : null}
 
+          {/* ===== SUGGESTION ===== */}
           {step === "suggestion" ? (
             <View style={styles.stageContainer} testID="suggestion-screen">
+              <Text style={styles.smallLabel}>次に変えるのはこれ</Text>
+
               <View style={[styles.suggestionCard, accentShadow]}>
                 <View style={styles.suggestionPill}>
                   <Droplets color={coffeeTheme.accentStrong} size={16} />
@@ -360,85 +716,88 @@ export default function HomeScreen() {
                 </View>
                 <Text style={styles.suggestionText}>{suggestion.suggestion}</Text>
                 <Text style={styles.reasonText}>{suggestion.reason}</Text>
-                <Text style={styles.footnote}>明日の朝、もう一杯試してみてください</Text>
+                <Text style={styles.footnote}>明日の朝、もう一杯試してみてください ☕</Text>
               </View>
 
               <View style={styles.actionRow}>
                 <PrimaryButton
-                  label={saveMutation.isPending ? "保存中..." : "この提案を保存"}
-                  onPress={handleSaveSuggestion}
-                  disabled={saveMutation.isPending}
-                  icon={<Save color="#FFF9F0" size={18} />}
-                  testId="save-suggestion"
-                />
-                <PrimaryButton
                   label="スクリーンショットを保存"
                   onPress={() => {
-                    Alert.alert(
-                      "共有で保存を補助します",
-                      "この環境では直接の画面保存ではなく、共有シートで保存や送信を行えます",
-                      [
-                        { text: "キャンセル", style: "cancel" },
-                        { text: "共有する", onPress: () => void handleShareFallback() },
-                      ]
-                    );
+                    Alert.alert("共有で保存を補助します", "この環境では共有シートで保存や送信を行えます", [
+                      { text: "キャンセル", style: "cancel" },
+                      { text: "共有する", onPress: () => void handleShareFallback() },
+                    ]);
                   }}
                   icon={<Share2 color={coffeeTheme.accentStrong} size={18} />}
                   testId="share-suggestion"
                   subtle
                 />
+                <PrimaryButton
+                  label={saveMutation.isPending ? "保存中..." : "保存する"}
+                  onPress={handleSave}
+                  disabled={saveMutation.isPending}
+                  icon={<Save color="#FFF9F0" size={18} />}
+                  testId="save-suggestion"
+                />
               </View>
 
               <PrimaryButton
-                label="次に淹れたら教えてください →"
+                label="結果を教える →"
                 onPress={() => {
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setStep("result");
                   setResultChoice(null);
+                  scrollRef.current?.scrollTo({ y: 0, animated: false });
                 }}
                 testId="go-to-result"
               />
             </View>
           ) : null}
 
+          {/* ===== RESULT ===== */}
           {step === "result" ? (
             <View style={styles.stageContainer} testID="result-screen">
               <View style={styles.resultIntroCard}>
-                <Text style={styles.sectionTitle}>次の一杯はどうでしたか？</Text>
+                <Text style={styles.sectionTitle}>次に淹れたら教えてください</Text>
               </View>
 
               <View style={styles.resultGrid}>
                 <PrimaryButton
                   label="良くなった！"
-                  onPress={() => handleResultChoice("better")}
-                  testId="result-better"
+                  onPress={() => handleResultChoice("improved")}
+                  testId="result-improved"
                 />
                 <PrimaryButton
                   label="まだ少し気になる"
-                  onPress={() => handleResultChoice("slightly")}
-                  testId="result-slightly"
+                  onPress={() => handleResultChoice("still_off")}
+                  testId="result-still_off"
                   subtle
                 />
                 <PrimaryButton
                   label="逆になった"
-                  onPress={() => handleResultChoice("opposite")}
-                  testId="result-opposite"
+                  onPress={() => handleResultChoice("reversed")}
+                  testId="result-reversed"
                   subtle
                 />
                 <PrimaryButton
                   label="よく分からない"
-                  onPress={() => handleResultChoice("unknown")}
-                  testId="result-unknown"
+                  onPress={() => handleResultChoice("unclear")}
+                  testId="result-unclear"
                   subtle
                 />
               </View>
 
-              {resultChoice === "better" ? (
+              {resultChoice === "improved" ? (
                 <View style={styles.feedbackCard}>
-                  <Text style={styles.feedbackTitle}>このレシピを保存しますか？</Text>
+                  <Text style={styles.feedbackTitle}>やった！このレシピを保存しますか？</Text>
                   <PrimaryButton
-                    label={saveMutation.isPending ? "保存中..." : "この提案を保存"}
-                    onPress={handleSaveSuggestion}
+                    label={saveMutation.isPending ? "保存中..." : "保存する"}
+                    onPress={() => {
+                      handleSave();
+                      setTimeout(() => {
+                        resetDiagnosis();
+                      }, 400);
+                    }}
                     disabled={saveMutation.isPending}
                     icon={<Save color="#FFF9F0" size={18} />}
                     testId="result-save"
@@ -446,61 +805,43 @@ export default function HomeScreen() {
                 </View>
               ) : null}
 
-              {resultChoice === "slightly" ? (
+              {resultChoice === "still_off" ? (
                 <View style={styles.feedbackCard}>
                   <Text style={styles.feedbackTitle}>もう一歩ですね。もう一回試してみましょう</Text>
-                  <PrimaryButton
-                    label="診断画面に戻る"
-                    onPress={() => {
-                      setStep("diagnosis");
-                      setResultChoice(null);
-                    }}
-                    testId="slightly-back"
-                    subtle
-                  />
                 </View>
               ) : null}
 
-              {resultChoice === "opposite" ? (
+              {resultChoice === "reversed" ? (
                 <View style={styles.feedbackCard}>
-                  <Text style={styles.feedbackTitle}>すみません、逆方向に動いてしまいました</Text>
-                  <PrimaryButton
-                    label="診断画面に戻る"
-                    onPress={() => {
-                      setStep("diagnosis");
-                      setResultChoice(null);
-                    }}
-                    testId="opposite-back"
-                    subtle
-                  />
+                  <Text style={styles.feedbackTitle}>すみません、逆方向に動きました。もう一度診断しましょう</Text>
                 </View>
               ) : null}
 
-              {resultChoice === "unknown" ? (
+              {resultChoice === "unclear" ? (
                 <View style={styles.feedbackCard}>
                   <Text style={styles.feedbackTitle}>何が気になりますか？</Text>
                   <View style={styles.resultGrid}>
                     <PrimaryButton
                       label="酸味が残る"
-                      onPress={() => handleResultFollowUp("sour_remain")}
+                      onPress={() => handleResultFollowUp("sour")}
                       testId="followup-sour"
                       subtle
                     />
                     <PrimaryButton
                       label="苦味が残る"
-                      onPress={() => handleResultFollowUp("bitter_remain")}
+                      onPress={() => handleResultFollowUp("bitter")}
                       testId="followup-bitter"
                       subtle
                     />
                     <PrimaryButton
                       label="薄い感じがする"
-                      onPress={() => handleResultFollowUp("thin_feel")}
+                      onPress={() => handleResultFollowUp("thin")}
                       testId="followup-thin"
                       subtle
                     />
                     <PrimaryButton
                       label="香りが弱い"
-                      onPress={() => handleResultFollowUp("aroma_weak")}
+                      onPress={() => handleResultFollowUp("thin")}
                       testId="followup-aroma"
                       subtle
                     />
@@ -519,6 +860,8 @@ export default function HomeScreen() {
     </View>
   );
 }
+
+// --- Styles ---
 
 const styles = StyleSheet.create({
   screen: {
@@ -553,7 +896,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 30,
     color: coffeeTheme.text,
-    fontWeight: "700" as const,
+    fontWeight: "700",
     maxWidth: 250,
   },
   badge: {
@@ -569,8 +912,45 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: "600" as const,
+    fontWeight: "600",
     color: coffeeTheme.accentStrong,
+  },
+  modeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 18,
+    paddingBottom: 4,
+  },
+  modeLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#8C8C8C",
+  },
+  modeLabelDetailed: {
+    color: "#D4A574",
+  },
+  modeToggleText: {
+    fontSize: 13,
+    color: coffeeTheme.accent,
+    fontWeight: "500",
+  },
+  toast: {
+    position: "absolute",
+    top: 100,
+    left: 24,
+    right: 24,
+    backgroundColor: coffeeTheme.text,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    zIndex: 100,
+  },
+  toastText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FFF9F0",
   },
   scrollView: {
     flex: 1,
@@ -583,6 +963,28 @@ const styles = StyleSheet.create({
   stageContainer: {
     gap: 14,
   },
+  progressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 4,
+  },
+  progressText: {
+    fontSize: 13,
+    color: coffeeTheme.textMuted,
+    fontWeight: "600",
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    alignSelf: "flex-start",
+  },
+  backButtonText: {
+    fontSize: 14,
+    color: coffeeTheme.textMuted,
+    fontWeight: "600",
+  },
   sectionCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
@@ -593,13 +995,18 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 17,
-    fontWeight: "700" as const,
+    fontWeight: "700",
     color: coffeeTheme.text,
   },
   sectionDescription: {
     fontSize: 13,
     lineHeight: 18,
     color: coffeeTheme.textMuted,
+  },
+  smallLabel: {
+    fontSize: 14,
+    color: coffeeTheme.textMuted,
+    fontWeight: "500",
   },
   optionGrid: {
     gap: 8,
@@ -625,7 +1032,7 @@ const styles = StyleSheet.create({
   },
   optionLabel: {
     fontSize: 16,
-    fontWeight: "700" as const,
+    fontWeight: "700",
     color: coffeeTheme.text,
   },
   optionLabelSelected: {
@@ -669,12 +1076,73 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     fontSize: 16,
-    fontWeight: "700" as const,
+    fontWeight: "700",
     color: "#FFF9F0",
   },
   secondaryButtonText: {
     color: coffeeTheme.accentStrong,
   },
+  // Temp input styles
+  tempPresetRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  tempPresetButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: coffeeTheme.background,
+    borderWidth: 1,
+    borderColor: coffeeTheme.cardBorder,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  tempPresetText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: coffeeTheme.text,
+  },
+  boilingButton: {
+    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: coffeeTheme.background,
+    borderWidth: 1,
+    borderColor: coffeeTheme.cardBorder,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  tempInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  tempTextInput: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: coffeeTheme.background,
+    borderWidth: 1,
+    borderColor: coffeeTheme.cardBorder,
+    paddingHorizontal: 14,
+    fontSize: 16,
+    color: coffeeTheme.text,
+  },
+  tempUnit: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: coffeeTheme.textMuted,
+  },
+  tempErrorText: {
+    fontSize: 13,
+    color: coffeeTheme.warning,
+  },
+  textLink: {
+    fontSize: 14,
+    color: coffeeTheme.accent,
+    fontWeight: "500",
+    textDecorationLine: "underline",
+  },
+  // Suggestion
   suggestionCard: {
     borderRadius: 24,
     backgroundColor: "#FFFFFF",
@@ -696,13 +1164,13 @@ const styles = StyleSheet.create({
   },
   suggestionPillText: {
     fontSize: 12,
-    fontWeight: "600" as const,
+    fontWeight: "600",
     color: coffeeTheme.accentStrong,
   },
   suggestionText: {
     fontSize: 30,
     lineHeight: 40,
-    fontWeight: "800" as const,
+    fontWeight: "800",
     color: coffeeTheme.text,
     marginTop: 4,
   },
@@ -719,6 +1187,7 @@ const styles = StyleSheet.create({
   actionRow: {
     gap: 10,
   },
+  // Result
   resultIntroCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
@@ -741,13 +1210,8 @@ const styles = StyleSheet.create({
   feedbackTitle: {
     fontSize: 17,
     lineHeight: 24,
-    fontWeight: "700" as const,
+    fontWeight: "700",
     color: coffeeTheme.text,
-  },
-  feedbackText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: coffeeTheme.textMuted,
   },
   inlineReset: {
     flexDirection: "row",
@@ -759,6 +1223,6 @@ const styles = StyleSheet.create({
   inlineResetText: {
     fontSize: 14,
     color: coffeeTheme.textMuted,
-    fontWeight: "600" as const,
+    fontWeight: "600",
   },
 });

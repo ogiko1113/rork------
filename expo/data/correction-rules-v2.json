@@ -1,0 +1,146 @@
+{
+  "version": "2.0",
+  "description": "補正ルール v2 — 5軸対応（器具×焙煎度×味×速度×湯温）",
+  "temp_ranges": {
+    "low": { "min": 0, "max": 87, "label": "低温（〜87℃）" },
+    "mid": { "min": 88, "max": 93, "label": "中温（88〜93℃）" },
+    "high": { "min": 94, "max": 100, "label": "高温（94℃〜）" }
+  },
+  "rules": [
+
+    {"id":"v60-001","equipment":"hario_v60","roast":"light","taste":"sour","flow":"fast","temp":"unknown","suggestion":"挽きを少し細かくする","reason":"お湯が速く通りすぎて、コーヒーの成分が十分に出ていません"},
+    {"id":"v60-002","equipment":"hario_v60","roast":"light","taste":"sour","flow":"fast","temp":"low","suggestion":"湯温を93℃くらいまで上げる","reason":"浅煎りは高めの温度でしっかり抽出すると酸味が和らぎます"},
+    {"id":"v60-003","equipment":"hario_v60","roast":"light","taste":"sour","flow":"fast","temp":"mid","suggestion":"挽きを少し細かくする","reason":"お湯が速く通りすぎて抽出不足です"},
+    {"id":"v60-004","equipment":"hario_v60","roast":"light","taste":"sour","flow":"fast","temp":"high","suggestion":"挽きを少し細かくする","reason":"湯温は十分です。挽きを細かくしてお湯の通過を遅くしましょう"},
+
+    {"id":"v60-005","equipment":"hario_v60","roast":"light","taste":"sour","flow":"slow","temp":"unknown","suggestion":"湯温を少し上げる","reason":"湯温が低く抽出が進んでいません"},
+    {"id":"v60-006","equipment":"hario_v60","roast":"light","taste":"sour","flow":"slow","temp":"low","suggestion":"湯温を93℃くらいまで上げる","reason":"湯温が低いのが主な原因です。浅煎りには高めの温度が合います"},
+    {"id":"v60-007","equipment":"hario_v60","roast":"light","taste":"sour","flow":"slow","temp":"mid","suggestion":"湯温を95℃くらいまで上げる","reason":"お湯はゆっくり落ちているので、もう少し温度を上げて抽出を促しましょう"},
+    {"id":"v60-008","equipment":"hario_v60","roast":"light","taste":"sour","flow":"slow","temp":"high","suggestion":"蒸らし時間を10秒長くする","reason":"湯温も流速も問題ないので、蒸らしを長くして抽出を均一にしましょう"},
+
+    {"id":"v60-009","equipment":"hario_v60","roast":"light","taste":"sour","flow":"normal","temp":"unknown","suggestion":"挽きを少し細かくする","reason":"もう少し成分を引き出しましょう"},
+    {"id":"v60-010","equipment":"hario_v60","roast":"light","taste":"sour","flow":"normal","temp":"low","suggestion":"湯温を93℃くらいまで上げる","reason":"湯温が低く、浅煎りの成分が十分に出ていません"},
+    {"id":"v60-011","equipment":"hario_v60","roast":"light","taste":"sour","flow":"normal","temp":"mid","suggestion":"挽きを少し細かくする","reason":"抽出をもう少し進めるために、挽きを細かくしましょう"},
+    {"id":"v60-012","equipment":"hario_v60","roast":"light","taste":"sour","flow":"normal","temp":"high","suggestion":"挽きを少し細かくする","reason":"湯温は十分です。挽きで調整しましょう"},
+
+    {"id":"v60-013","equipment":"hario_v60","roast":"light","taste":"bitter","flow":"slow","temp":"unknown","suggestion":"挽きを少し粗くする","reason":"抽出過多です。お湯の通りを速くしましょう"},
+    {"id":"v60-014","equipment":"hario_v60","roast":"light","taste":"bitter","flow":"slow","temp":"low","suggestion":"挽きを少し粗くする","reason":"湯温は低めですが、お湯が長く留まりすぎて抽出過多です"},
+    {"id":"v60-015","equipment":"hario_v60","roast":"light","taste":"bitter","flow":"slow","temp":"mid","suggestion":"挽きを少し粗くする","reason":"お湯の滞留時間が長すぎます。粗くして通りを速くしましょう"},
+    {"id":"v60-016","equipment":"hario_v60","roast":"light","taste":"bitter","flow":"slow","temp":"high","suggestion":"挽きを粗くして湯温を90℃に下げる","reason":"高温×長時間で抽出過多です。両方調整しましょう"},
+
+    {"id":"v60-017","equipment":"hario_v60","roast":"light","taste":"bitter","flow":"fast","temp":"unknown","suggestion":"湯温を下げる（90℃前後へ）","reason":"浅煎りは温度に敏感です"},
+    {"id":"v60-018","equipment":"hario_v60","roast":"light","taste":"bitter","flow":"fast","temp":"low","suggestion":"粉量を少し減らす（−1g）","reason":"湯温も流速も苦味の原因ではなさそうです。粉と水の比率を調整しましょう"},
+    {"id":"v60-019","equipment":"hario_v60","roast":"light","taste":"bitter","flow":"fast","temp":"mid","suggestion":"湯温を88℃くらいに下げる","reason":"少し温度を下げることで抽出をおだやかにしましょう"},
+    {"id":"v60-020","equipment":"hario_v60","roast":"light","taste":"bitter","flow":"fast","temp":"high","suggestion":"湯温を90℃くらいに下げる","reason":"高温で苦味成分が出すぎています"},
+
+    {"id":"v60-021","equipment":"hario_v60","roast":"light","taste":"bitter","flow":"normal","temp":"unknown","suggestion":"湯温を少し下げる","reason":"抽出がやや進みすぎています"},
+    {"id":"v60-022","equipment":"hario_v60","roast":"light","taste":"bitter","flow":"normal","temp":"low","suggestion":"粉量を少し減らす（−1g）","reason":"湯温は低めなので、粉と水の比率で調整しましょう"},
+    {"id":"v60-023","equipment":"hario_v60","roast":"light","taste":"bitter","flow":"normal","temp":"mid","suggestion":"湯温を88℃くらいに下げる","reason":"少し温度を下げて抽出をおだやかにしましょう"},
+    {"id":"v60-024","equipment":"hario_v60","roast":"light","taste":"bitter","flow":"normal","temp":"high","suggestion":"湯温を90℃に下げる","reason":"浅煎りに対して温度が高すぎます"},
+
+    {"id":"v60-025","equipment":"hario_v60","roast":"light","taste":"thin","flow":"fast","temp":"unknown","suggestion":"挽きを少し細かくする","reason":"お湯が速く通りすぎてコーヒーが薄くなっています"},
+    {"id":"v60-026","equipment":"hario_v60","roast":"light","taste":"thin","flow":"fast","temp":"low","suggestion":"湯温を93℃に上げて挽きも少し細かくする","reason":"低温×速い流れで成分がほとんど出ていません"},
+    {"id":"v60-027","equipment":"hario_v60","roast":"light","taste":"thin","flow":"fast","temp":"mid","suggestion":"挽きを少し細かくする","reason":"お湯の通過が速すぎて成分を引き出せていません"},
+    {"id":"v60-028","equipment":"hario_v60","roast":"light","taste":"thin","flow":"fast","temp":"high","suggestion":"粉量を増やす（+2g）","reason":"湯温は十分ですが、粉の量が足りていません。目安：水200mlに粉13g"},
+
+    {"id":"v60-029","equipment":"hario_v60","roast":"light","taste":"thin","flow":"slow","temp":"unknown","suggestion":"粉量を増やす（+2g）","reason":"お湯はゆっくり落ちているのに薄いので、粉量が足りていません。目安：水200mlに粉13g"},
+    {"id":"v60-030","equipment":"hario_v60","roast":"light","taste":"thin","flow":"normal","temp":"unknown","suggestion":"挽きを少し細かくする","reason":"もう少し成分を引き出しましょう"},
+
+    {"id":"v60-031","equipment":"hario_v60","roast":"medium","taste":"sour","flow":"fast","temp":"unknown","suggestion":"挽きを少し細かくする","reason":"抽出不足です。もう少し成分を引き出しましょう"},
+    {"id":"v60-032","equipment":"hario_v60","roast":"medium","taste":"sour","flow":"fast","temp":"low","suggestion":"湯温を91℃くらいまで上げる","reason":"中煎りには90℃前後がおすすめです"},
+    {"id":"v60-033","equipment":"hario_v60","roast":"medium","taste":"sour","flow":"fast","temp":"mid","suggestion":"挽きを少し細かくする","reason":"湯温は適正です。挽きを細かくして抽出を増やしましょう"},
+    {"id":"v60-034","equipment":"hario_v60","roast":"medium","taste":"sour","flow":"fast","temp":"high","suggestion":"挽きを少し細かくする","reason":"湯温は十分高いので、挽きで調整しましょう"},
+
+    {"id":"v60-035","equipment":"hario_v60","roast":"medium","taste":"sour","flow":"slow","temp":"unknown","suggestion":"湯温を少し上げる","reason":"お湯はゆっくり落ちているのに酸味が出ているので、温度が原因です"},
+    {"id":"v60-036","equipment":"hario_v60","roast":"medium","taste":"sour","flow":"slow","temp":"low","suggestion":"湯温を91℃くらいまで上げる","reason":"湯温が低いのが原因です"},
+    {"id":"v60-037","equipment":"hario_v60","roast":"medium","taste":"sour","flow":"slow","temp":"mid","suggestion":"湯温を93℃くらいまで上げる","reason":"もう少し温度を上げて抽出を促しましょう"},
+    {"id":"v60-038","equipment":"hario_v60","roast":"medium","taste":"sour","flow":"slow","temp":"high","suggestion":"蒸らし時間を10秒長くする","reason":"湯温も流速も問題ないので、蒸らしで均一な抽出を促しましょう"},
+
+    {"id":"v60-039","equipment":"hario_v60","roast":"medium","taste":"sour","flow":"normal","temp":"unknown","suggestion":"挽きを少し細かくする","reason":"もう少し成分を引き出しましょう"},
+    {"id":"v60-040","equipment":"hario_v60","roast":"medium","taste":"sour","flow":"normal","temp":"low","suggestion":"湯温を91℃くらいまで上げる","reason":"中煎りには90℃前後が最適です"},
+    {"id":"v60-041","equipment":"hario_v60","roast":"medium","taste":"sour","flow":"normal","temp":"mid","suggestion":"挽きを少し細かくする","reason":"湯温は適正なので、挽きで微調整しましょう"},
+
+    {"id":"v60-042","equipment":"hario_v60","roast":"medium","taste":"bitter","flow":"slow","temp":"unknown","suggestion":"挽きを粗くして注湯を速くする","reason":"抽出過多です。お湯の滞留時間を短くしましょう"},
+    {"id":"v60-043","equipment":"hario_v60","roast":"medium","taste":"bitter","flow":"slow","temp":"low","suggestion":"挽きを少し粗くする","reason":"湯温は低めですが、滞留時間が長すぎて抽出過多です"},
+    {"id":"v60-044","equipment":"hario_v60","roast":"medium","taste":"bitter","flow":"slow","temp":"mid","suggestion":"挽きを少し粗くする","reason":"お湯の通りを速くして抽出時間を短くしましょう"},
+    {"id":"v60-045","equipment":"hario_v60","roast":"medium","taste":"bitter","flow":"slow","temp":"high","suggestion":"挽きを粗くして湯温を90℃に下げる","reason":"高温×長時間で抽出過多です"},
+
+    {"id":"v60-046","equipment":"hario_v60","roast":"medium","taste":"bitter","flow":"fast","temp":"unknown","suggestion":"湯温を下げる（88℃前後へ）","reason":"中煎りでも温度が高いと苦味が出やすくなります"},
+    {"id":"v60-047","equipment":"hario_v60","roast":"medium","taste":"bitter","flow":"fast","temp":"high","suggestion":"湯温を90℃に下げる","reason":"温度が高すぎて苦味成分が出ています"},
+    {"id":"v60-048","equipment":"hario_v60","roast":"medium","taste":"bitter","flow":"fast","temp":"mid","suggestion":"粉量を少し減らす（−1g）","reason":"流速も温度も標準的なので、粉と水の比率を調整しましょう"},
+    {"id":"v60-049","equipment":"hario_v60","roast":"medium","taste":"bitter","flow":"normal","temp":"unknown","suggestion":"湯温を少し下げる","reason":"抽出がやや進みすぎています"},
+    {"id":"v60-050","equipment":"hario_v60","roast":"medium","taste":"bitter","flow":"normal","temp":"high","suggestion":"湯温を90℃に下げる","reason":"中煎りに対して温度がやや高めです"},
+
+    {"id":"v60-051","equipment":"hario_v60","roast":"medium","taste":"thin","flow":"fast","temp":"unknown","suggestion":"挽きを少し細かくする","reason":"お湯が速く通りすぎてコーヒーが薄くなっています"},
+    {"id":"v60-052","equipment":"hario_v60","roast":"medium","taste":"thin","flow":"fast","temp":"low","suggestion":"湯温を91℃に上げて挽きも少し細かくする","reason":"低温×速い流れで成分がほとんど出ていません"},
+    {"id":"v60-053","equipment":"hario_v60","roast":"medium","taste":"thin","flow":"fast","temp":"mid","suggestion":"挽きを少し細かくする","reason":"お湯の通過が速すぎます"},
+    {"id":"v60-054","equipment":"hario_v60","roast":"medium","taste":"thin","flow":"fast","temp":"high","suggestion":"粉量を増やす（+2g）","reason":"湯温は十分です。粉の量が足りていません。目安：水200mlに粉13g"},
+    {"id":"v60-055","equipment":"hario_v60","roast":"medium","taste":"thin","flow":"slow","temp":"unknown","suggestion":"粉量を増やす（+2g）","reason":"お湯はゆっくり落ちているのに薄いので、粉量不足です。目安：水200mlに粉13g"},
+    {"id":"v60-056","equipment":"hario_v60","roast":"medium","taste":"thin","flow":"normal","temp":"unknown","suggestion":"挽きを少し細かくする","reason":"もう少し成分を引き出しましょう"},
+
+    {"id":"v60-057","equipment":"hario_v60","roast":"dark","taste":"bitter","flow":"slow","temp":"unknown","suggestion":"挽きを粗くして湯温を下げる","reason":"深煎りの苦味は焙煎由来もありますが、まず抽出を控えましょう"},
+    {"id":"v60-058","equipment":"hario_v60","roast":"dark","taste":"bitter","flow":"slow","temp":"low","suggestion":"挽きを少し粗くする","reason":"湯温は低めですが、滞留時間が長すぎます"},
+    {"id":"v60-059","equipment":"hario_v60","roast":"dark","taste":"bitter","flow":"slow","temp":"mid","suggestion":"挽きを粗くして湯温を85℃くらいに下げる","reason":"深煎りには低めの温度が合います"},
+    {"id":"v60-060","equipment":"hario_v60","roast":"dark","taste":"bitter","flow":"slow","temp":"high","suggestion":"湯温を85℃まで下げる","reason":"深煎りに対して温度が高すぎます。低温でじっくり淹れましょう"},
+
+    {"id":"v60-061","equipment":"hario_v60","roast":"dark","taste":"bitter","flow":"fast","temp":"unknown","suggestion":"湯温を下げる（85℃前後へ）","reason":"深煎りは低温でおだやかに抽出するのがおすすめです"},
+    {"id":"v60-062","equipment":"hario_v60","roast":"dark","taste":"bitter","flow":"fast","temp":"high","suggestion":"湯温を85℃まで下げる","reason":"深煎りに高温は苦味が出すぎます"},
+    {"id":"v60-063","equipment":"hario_v60","roast":"dark","taste":"bitter","flow":"fast","temp":"mid","suggestion":"湯温を85℃くらいに下げる","reason":"深煎りにはもう少し低い温度が合います"},
+    {"id":"v60-064","equipment":"hario_v60","roast":"dark","taste":"bitter","flow":"fast","temp":"low","suggestion":"粉量を少し減らす（−1g）","reason":"湯温は低めなので、粉と水の比率で調整しましょう"},
+    {"id":"v60-065","equipment":"hario_v60","roast":"dark","taste":"bitter","flow":"normal","temp":"unknown","suggestion":"湯温を下げる（85℃前後へ）","reason":"深煎りは低温がおすすめです"},
+    {"id":"v60-066","equipment":"hario_v60","roast":"dark","taste":"bitter","flow":"normal","temp":"high","suggestion":"湯温を85℃まで下げる","reason":"温度を下げるだけで大きく変わります"},
+
+    {"id":"v60-067","equipment":"hario_v60","roast":"dark","taste":"sour","flow":"fast","temp":"unknown","suggestion":"挽きを少し細かくする","reason":"深煎りで酸味が出るのは抽出不足です"},
+    {"id":"v60-068","equipment":"hario_v60","roast":"dark","taste":"sour","flow":"fast","temp":"low","suggestion":"湯温を88℃くらいまで上げる","reason":"深煎りでも低すぎると酸味が出ます"},
+    {"id":"v60-069","equipment":"hario_v60","roast":"dark","taste":"sour","flow":"fast","temp":"mid","suggestion":"挽きを少し細かくする","reason":"お湯が速く通りすぎて抽出不足です"},
+    {"id":"v60-070","equipment":"hario_v60","roast":"dark","taste":"sour","flow":"slow","temp":"unknown","suggestion":"湯温を少し上げる","reason":"深煎りで酸味が出るのは湯温が低すぎる可能性が高いです"},
+    {"id":"v60-071","equipment":"hario_v60","roast":"dark","taste":"sour","flow":"slow","temp":"low","suggestion":"湯温を88℃くらいまで上げる","reason":"湯温が低すぎます"},
+
+    {"id":"v60-072","equipment":"hario_v60","roast":"dark","taste":"thin","flow":"fast","temp":"unknown","suggestion":"粉量を増やす（+2g）","reason":"コーヒーの成分が足りていません。目安：水200mlに粉13g"},
+    {"id":"v60-073","equipment":"hario_v60","roast":"dark","taste":"thin","flow":"fast","temp":"low","suggestion":"粉量を増やして湯温を88℃に上げる","reason":"粉量不足と低温が重なっています。目安：水200mlに粉13g"},
+    {"id":"v60-074","equipment":"hario_v60","roast":"dark","taste":"thin","flow":"fast","temp":"mid","suggestion":"挽きを少し細かくする","reason":"お湯が速く通りすぎています"},
+    {"id":"v60-075","equipment":"hario_v60","roast":"dark","taste":"thin","flow":"fast","temp":"high","suggestion":"粉量を増やす（+2g）","reason":"湯温は十分です。粉量を増やしましょう。目安：水200mlに粉13g"},
+    {"id":"v60-076","equipment":"hario_v60","roast":"dark","taste":"thin","flow":"slow","temp":"unknown","suggestion":"粉量を増やす（+2g）","reason":"お湯はゆっくり落ちているのに薄いので、粉量不足です。目安：水200mlに粉13g"},
+    {"id":"v60-077","equipment":"hario_v60","roast":"dark","taste":"thin","flow":"normal","temp":"unknown","suggestion":"粉量を増やす（+2g）","reason":"コーヒーの成分が足りていません。目安：水200mlに粉13g"},
+
+    {"id":"kw-001","equipment":"kalita_wave","roast":"light","taste":"sour","flow":"fast","temp":"unknown","suggestion":"挽きを少し細かくする","reason":"Kalitaは底面3穴で流速が安定しやすいですが、粗すぎると抽出不足になります"},
+    {"id":"kw-002","equipment":"kalita_wave","roast":"light","taste":"sour","flow":"fast","temp":"low","suggestion":"湯温を93℃くらいまで上げる","reason":"浅煎りには高めの温度が必要です"},
+    {"id":"kw-003","equipment":"kalita_wave","roast":"light","taste":"sour","flow":"slow","temp":"unknown","suggestion":"湯温を少し上げる","reason":"Kalitaで遅いのに酸味が出るなら、温度が原因です"},
+    {"id":"kw-004","equipment":"kalita_wave","roast":"light","taste":"bitter","flow":"slow","temp":"unknown","suggestion":"挽きを少し粗くする","reason":"Kalitaは滞留しやすい構造です。粗くしてお湯の通りを速くしましょう"},
+    {"id":"kw-005","equipment":"kalita_wave","roast":"light","taste":"bitter","flow":"slow","temp":"high","suggestion":"挽きを粗くして湯温を90℃に下げる","reason":"高温×Kalitaの滞留で抽出過多です"},
+    {"id":"kw-006","equipment":"kalita_wave","roast":"medium","taste":"sour","flow":"fast","temp":"unknown","suggestion":"挽きを少し細かくする","reason":"もう少し成分を引き出しましょう"},
+    {"id":"kw-007","equipment":"kalita_wave","roast":"medium","taste":"bitter","flow":"slow","temp":"unknown","suggestion":"挽きを粗くして注湯を速くする","reason":"Kalitaは底面が平らで滞留しやすいため、お湯の通りを意識しましょう"},
+    {"id":"kw-008","equipment":"kalita_wave","roast":"dark","taste":"bitter","flow":"slow","temp":"unknown","suggestion":"挽きを粗くして湯温を85℃に下げる","reason":"深煎り×Kalitaの滞留で苦味が出やすいです"},
+    {"id":"kw-009","equipment":"kalita_wave","roast":"dark","taste":"thin","flow":"fast","temp":"unknown","suggestion":"粉量を増やす（+2g）","reason":"コーヒーの成分が足りていません。目安：水200mlに粉13g"},
+
+    {"id":"mel-001","equipment":"melitta","roast":"light","taste":"sour","flow":"fast","temp":"unknown","suggestion":"挽きを少し細かくする","reason":"お湯が速く通りすぎています"},
+    {"id":"mel-002","equipment":"melitta","roast":"light","taste":"sour","flow":"slow","temp":"unknown","suggestion":"湯温を少し上げる","reason":"メリタは1つ穴で流速が安定しますが、温度が低いと酸味が残ります"},
+    {"id":"mel-003","equipment":"melitta","roast":"medium","taste":"bitter","flow":"slow","temp":"unknown","suggestion":"挽きを少し粗くする","reason":"メリタは1つ穴で滞留しやすいです。粗くして抽出時間を短くしましょう"},
+    {"id":"mel-004","equipment":"melitta","roast":"dark","taste":"bitter","flow":"slow","temp":"unknown","suggestion":"挽きを粗くして湯温を85℃に下げる","reason":"メリタの構造上、深煎り×遅い流れは苦味が出やすいです"},
+    {"id":"mel-005","equipment":"melitta","roast":"dark","taste":"thin","flow":"fast","temp":"unknown","suggestion":"粉量を増やす（+2g）","reason":"コーヒーの成分が足りていません。目安：水200mlに粉13g"},
+
+    {"id":"fp-001","equipment":"french_press","roast":"light","taste":"sour","flow":"unknown","temp":"unknown","suggestion":"湯温を95℃くらいまで上げる","reason":"フレンチプレスは浸漬式なので、温度を上げると抽出が進みます"},
+    {"id":"fp-002","equipment":"french_press","roast":"light","taste":"sour","flow":"unknown","temp":"low","suggestion":"湯温を95℃くらいまで上げる","reason":"浸漬式では温度が特に重要です"},
+    {"id":"fp-003","equipment":"french_press","roast":"light","taste":"sour","flow":"unknown","temp":"mid","suggestion":"浸漬時間を30秒長くする","reason":"温度は適正です。もう少し長く浸けて抽出を進めましょう"},
+    {"id":"fp-004","equipment":"french_press","roast":"light","taste":"sour","flow":"unknown","temp":"high","suggestion":"挽きを少し細かくする","reason":"温度は十分です。接触面積を増やして抽出を促しましょう"},
+    {"id":"fp-005","equipment":"french_press","roast":"light","taste":"bitter","flow":"unknown","temp":"unknown","suggestion":"挽きを少し粗くする","reason":"フレンチプレスは粗挽きが基本です。細かすぎると抽出過多になります"},
+    {"id":"fp-006","equipment":"french_press","roast":"light","taste":"bitter","flow":"unknown","temp":"high","suggestion":"湯温を90℃に下げる","reason":"高温で苦味成分が出すぎています"},
+    {"id":"fp-007","equipment":"french_press","roast":"medium","taste":"sour","flow":"unknown","temp":"unknown","suggestion":"浸漬時間を30秒長くする","reason":"もう少し長く浸けて成分を引き出しましょう"},
+    {"id":"fp-008","equipment":"french_press","roast":"medium","taste":"bitter","flow":"unknown","temp":"unknown","suggestion":"浸漬時間を30秒短くする","reason":"長く浸けすぎて抽出過多です"},
+    {"id":"fp-009","equipment":"french_press","roast":"dark","taste":"bitter","flow":"unknown","temp":"unknown","suggestion":"湯温を85℃に下げて浸漬時間を短くする","reason":"深煎りは低温×短時間がおすすめです"},
+    {"id":"fp-010","equipment":"french_press","roast":"dark","taste":"thin","flow":"unknown","temp":"unknown","suggestion":"粉量を増やす（+3g）","reason":"フレンチプレスは粗挽きなので粉量を多めにしましょう。目安：水200mlに粉14g"},
+
+    {"id":"fallback-001","equipment":"other","roast":"unknown","taste":"sour","flow":"unknown","temp":"unknown","suggestion":"挽きを少し細かくする","reason":"酸味が気になるときは、まず挽きを細かくしてみてください"},
+    {"id":"fallback-002","equipment":"other","roast":"unknown","taste":"bitter","flow":"unknown","temp":"unknown","suggestion":"挽きを少し粗くする","reason":"苦味が気になるときは、まず挽きを粗くしてみてください"},
+    {"id":"fallback-003","equipment":"other","roast":"unknown","taste":"thin","flow":"unknown","temp":"unknown","suggestion":"粉量を増やす（+2g）","reason":"薄いときは粉を増やしてみてください。目安：水200mlに粉13g"},
+    {"id":"fallback-004","equipment":"other","roast":"unknown","taste":"unclear","flow":"unknown","temp":"unknown","suggestion":"挽きを少し細かくする","reason":"迷ったときは、まず挽きを細かくしてみるのが最も変化が分かりやすいです"}
+  ],
+
+  "rule_matching_priority": [
+    "1. equipment + roast + taste + flow + temp の完全一致を探す",
+    "2. 見つからなければ temp を unknown にしてマッチング（4軸フォールバック）",
+    "3. 見つからなければ flow を unknown にしてマッチング",
+    "4. 見つからなければ equipment を other にして汎用ルールを返す",
+    "5. それでも見つからなければ fallback-004 を返す"
+  ]
+}
