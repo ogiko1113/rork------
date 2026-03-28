@@ -380,7 +380,7 @@ export default function HomeScreen() {
     if (!form.taste || !form.equipment || !form.roast) return;
 
     const record: BrewRecord = {
-      id: `${Date.now()}`,
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       equipment: form.equipment,
       roast: form.roast,
       taste: form.taste,

@@ -212,10 +212,11 @@ export default function HistoryScreen() {
         ) : (
           <FlatList
             data={records}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item, index) => `${item.id}-${index}`}
             renderItem={({ item }) => (
               <RecordCard record={item} onReport={handleReport} />
             )}
+            extraData={records}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             testID="history-list"
