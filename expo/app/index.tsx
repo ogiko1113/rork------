@@ -508,10 +508,10 @@ export default function HomeScreen() {
               {step === "diagnosis" ? "今の一杯、どうでしたか？" : step === "suggestion" ? "提案" : "結果入力"}
             </Text>
           </View>
-          <View style={styles.badge}>
+          <Pressable style={styles.badge} onPress={() => router.push("/history")} testID="badge-go-to-history">
             <Coffee color={coffeeTheme.accentStrong} size={18} />
             <Text style={styles.badgeText}>{savedCount}件保存</Text>
-          </View>
+          </Pressable>
         </View>
 
         {/* Mode label + toggle - diagnosis only */}
