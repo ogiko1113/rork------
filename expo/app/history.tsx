@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, Stack } from "expo-router";
-import React from "react";
+import React, { useCallback, useState } from "react";
 import {
   FlatList,
   Platform,
@@ -14,8 +14,8 @@ import { ChevronLeft } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { coffeeTheme } from "@/constants/coffeeTheme";
-import { getSavedSuggestions } from "@/lib/storage";
-import { BrewRecord, EquipmentKey, RoastKey, TasteKey } from "@/types/coffee";
+import { getSavedSuggestions, updateBrewResult } from "@/lib/storage";
+import { BrewRecord, EquipmentKey, FlowKey, RoastKey, TasteKey } from "@/types/coffee";
 
 const tasteLabels: Record<TasteKey, string> = {
   sour: "酸っぱい",
@@ -38,12 +38,28 @@ const roastLabels: Record<RoastKey, string> = {
   unknown: "不明",
 };
 
+const flowLabels: Record<FlowKey, string> = {
+  fast: "速い",
+  normal: "普通",
+  slow: "遅い",
+  unknown: "不明",
+};
+
 const resultLabels: Record<string, string> = {
   improved: "良くなった",
-  still_off: "まだ気になる",
+  still_off: "まだ少し気になる",
   reversed: "逆になった",
   unclear: "よく分からない",
 };
+
+type ResultKey = "improved" | "still_off" | "reversed" | "unclear";
+
+const resultOptions: { key: ResultKey; label: string }[] = [
+  { key: "improved", label: "良くなった" },
+  { key: "still_off", label: "まだ少し気になる" },
+  { key: "reversed", label: "逆になった" },
+  { key: "unclear", label: "よく分からない" },
+];
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -54,47 +70,122 @@ function formatDate(iso: string): string {
   return `${month}/${day} ${hours}:${minutes}`;
 }
 
-function RecordCard({ record }: { record: BrewRecord }) {
+function RecordCard({
+  record,
+  onReport,
+}: {
+  record: BrewRecord;
+  onReport: (id: string, result: ResultKey) => void;
+}) {
+  const [showOptions, setShowOptions] = useState(false);
   const hasResult = record.result !== null;
-  const resultText = hasResult ? resultLabels[record.result!] ?? "未回答" : "未回答";
+
+  const handleReport = useCallback(
+    (result: ResultKey) => {
+      onReport(record.id, result);
+      setShowOptions(false);
+    },
+    [record.id, onReport]
+  );
 
   return (
     <View style={styles.card} testID={`history-card-${record.id}`}>
       <View style={styles.cardHeader}>
         <Text style={styles.dateText}>{formatDate(record.createdAt)}</Text>
-        <View style={[styles.resultBadge, !hasResult && styles.resultBadgeUnanswered]}>
-          <Text style={[styles.resultBadgeText, !hasResult && styles.resultBadgeTextUnanswered]}>
-            {resultText}
-          </Text>
-        </View>
       </View>
 
-      <View style={styles.tagsRow}>
-        <View style={styles.tag}>
-          <Text style={styles.tagText}>{tasteLabels[record.taste]}</Text>
-        </View>
-        <View style={styles.tag}>
-          <Text style={styles.tagText}>{equipmentLabels[record.equipment]}</Text>
-        </View>
-        <View style={styles.tag}>
-          <Text style={styles.tagText}>{roastLabels[record.roast]}</Text>
-        </View>
+      <View style={styles.detailsSection}>
+        <DetailRow label="焙煎度" value={roastLabels[record.roast]} />
+        {record.dose !== null && (
+          <DetailRow label="粉量" value={`${record.dose}g`} />
+        )}
+        <DetailRow label="器具" value={equipmentLabels[record.equipment]} />
+        <DetailRow label="お湯の速さ" value={flowLabels[record.flow]} />
+        <DetailRow label="味の感想" value={tasteLabels[record.taste]} />
       </View>
 
-      <Text style={styles.suggestionText} numberOfLines={3}>
-        {record.suggestion}
-      </Text>
+      <View style={styles.suggestionSection}>
+        <Text style={styles.suggestionLabel}>提案</Text>
+        <Text style={styles.suggestionText}>{record.suggestion}</Text>
+      </View>
+
+      {hasResult ? (
+        <View style={styles.resultRow}>
+          <Text style={styles.resultLabel}>結果</Text>
+          <View style={styles.resultBadge}>
+            <Text style={styles.resultBadgeText}>
+              {resultLabels[record.result!] ?? record.result}
+            </Text>
+          </View>
+        </View>
+      ) : showOptions ? (
+        <View style={styles.optionsSection}>
+          <Text style={styles.optionsTitle}>結果を選んでください</Text>
+          <View style={styles.optionsGrid}>
+            {resultOptions.map((opt) => (
+              <Pressable
+                key={opt.key}
+                style={({ pressed }) => [
+                  styles.optionButton,
+                  pressed && styles.optionButtonPressed,
+                ]}
+                onPress={() => handleReport(opt.key)}
+                testID={`report-${record.id}-${opt.key}`}
+              >
+                <Text style={styles.optionButtonText}>{opt.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Pressable
+            onPress={() => setShowOptions(false)}
+            style={styles.cancelLink}
+          >
+            <Text style={styles.cancelLinkText}>キャンセル</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable
+          style={({ pressed }) => [
+            styles.reportButton,
+            pressed && styles.reportButtonPressed,
+          ]}
+          onPress={() => setShowOptions(true)}
+          testID={`report-btn-${record.id}`}
+        >
+          <Text style={styles.reportButtonText}>結果を報告する</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.detailRow}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue}>{value}</Text>
     </View>
   );
 }
 
 export default function HistoryScreen() {
+  const queryClient = useQueryClient();
+
   const recordsQuery = useQuery({
     queryKey: ["saved-suggestions"],
     queryFn: getSavedSuggestions,
   });
 
   const records = recordsQuery.data ?? [];
+
+  const handleReport = useCallback(
+    async (id: string, result: ResultKey) => {
+      console.log("[History] Reporting result:", id, result);
+      await updateBrewResult(id, result);
+      await queryClient.invalidateQueries({ queryKey: ["saved-suggestions"] });
+    },
+    [queryClient]
+  );
 
   return (
     <View style={styles.screen} testID="history-screen">
@@ -122,7 +213,9 @@ export default function HistoryScreen() {
           <FlatList
             data={records}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <RecordCard record={item} />}
+            renderItem={({ item }) => (
+              <RecordCard record={item} onReport={handleReport} />
+            )}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             testID="history-list"
@@ -160,11 +253,11 @@ const styles = StyleSheet.create({
   backText: {
     fontSize: 15,
     color: coffeeTheme.textMuted,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: "700",
+    fontWeight: "700" as const,
     color: coffeeTheme.text,
   },
   emptyContainer: {
@@ -175,17 +268,18 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     color: coffeeTheme.textMuted,
-    fontWeight: "500",
+    fontWeight: "500" as const,
   },
   listContent: {
     padding: 16,
     gap: 12,
+    paddingBottom: 32,
   },
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
-    gap: 10,
+    gap: 12,
     shadowColor: "rgba(74, 46, 28, 0.08)",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
@@ -200,7 +294,58 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 13,
     color: coffeeTheme.textMuted,
-    fontWeight: "600",
+    fontWeight: "600" as const,
+  },
+  detailsSection: {
+    gap: 6,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 3,
+  },
+  detailLabel: {
+    fontSize: 13,
+    color: coffeeTheme.textMuted,
+    fontWeight: "500" as const,
+  },
+  detailValue: {
+    fontSize: 13,
+    color: coffeeTheme.text,
+    fontWeight: "600" as const,
+  },
+  suggestionSection: {
+    backgroundColor: coffeeTheme.background,
+    borderRadius: 8,
+    padding: 12,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: coffeeTheme.cardBorder,
+  },
+  suggestionLabel: {
+    fontSize: 11,
+    fontWeight: "700" as const,
+    color: coffeeTheme.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  suggestionText: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: "600" as const,
+    color: coffeeTheme.text,
+  },
+  resultRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 2,
+  },
+  resultLabel: {
+    fontSize: 13,
+    color: coffeeTheme.textMuted,
+    fontWeight: "500" as const,
   },
   resultBadge: {
     backgroundColor: coffeeTheme.accentSoft,
@@ -208,39 +353,61 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  resultBadgeUnanswered: {
-    backgroundColor: "#E8E4E0",
-  },
   resultBadgeText: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "700" as const,
     color: coffeeTheme.accentStrong,
   },
-  resultBadgeTextUnanswered: {
-    color: "#9E9691",
+  reportButton: {
+    backgroundColor: coffeeTheme.accent,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
   },
-  tagsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  reportButtonPressed: {
+    opacity: 0.8,
+  },
+  reportButtonText: {
+    fontSize: 14,
+    fontWeight: "700" as const,
+    color: "#FFFFFF",
+  },
+  optionsSection: {
+    gap: 8,
+  },
+  optionsTitle: {
+    fontSize: 13,
+    fontWeight: "600" as const,
+    color: coffeeTheme.textMuted,
+    textAlign: "center",
+  },
+  optionsGrid: {
     gap: 6,
   },
-  tag: {
+  optionButton: {
     backgroundColor: coffeeTheme.background,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    borderRadius: 8,
+    paddingVertical: 11,
+    alignItems: "center",
     borderWidth: 1,
     borderColor: coffeeTheme.cardBorder,
   },
-  tagText: {
-    fontSize: 12,
-    fontWeight: "600",
+  optionButtonPressed: {
+    backgroundColor: coffeeTheme.accentSoft,
+    borderColor: coffeeTheme.accent,
+  },
+  optionButtonText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
     color: coffeeTheme.text,
   },
-  suggestionText: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontWeight: "600",
-    color: coffeeTheme.text,
+  cancelLink: {
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  cancelLinkText: {
+    fontSize: 13,
+    color: coffeeTheme.textMuted,
+    fontWeight: "500" as const,
   },
 });
