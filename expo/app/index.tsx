@@ -203,37 +203,35 @@ export default function HomeScreen() {
 
   // --- Diagnosis Step Helpers ---
 
-  const _maxDiagStep: DiagnosisStep = mode === "detailed" ? 5 : 4;
+  const _maxDiagStep: DiagnosisStep = mode === "detailed" ? 6 : 5;
 
   const shouldSkipFlow = form.equipment === "french_press";
 
   const getEffectiveMaxStep = useCallback((): DiagnosisStep => {
     if (mode === "normal") {
-      return shouldSkipFlow ? 4 : 5;
+      return 5;
     }
-    return shouldSkipFlow ? 5 : 6;
-  }, [mode, shouldSkipFlow]);
+    return 6;
+  }, [mode]);
 
   const canGoNext = useCallback((): boolean => {
     switch (diagStep) {
       case 1:
-        return showHelperTaste ? form.helperTaste !== null : form.taste !== null;
-      case 2:
-        return form.equipment !== null;
-      case 3:
         return form.roast !== null;
-      case 4:
+      case 2:
         return true; // dose is optional
-      case 5:
-        if (shouldSkipFlow && mode === "normal") return false; // shouldn't be here
-        if (shouldSkipFlow && mode === "detailed") return true; // temp step - always ok
+      case 3:
+        return form.equipment !== null;
+      case 4:
         return form.flow !== null;
+      case 5:
+        return showHelperTaste ? form.helperTaste !== null : form.taste !== null;
       case 6:
         return true; // temp is optional
       default:
         return false;
     }
-  }, [diagStep, form, showHelperTaste, shouldSkipFlow, mode]);
+  }, [diagStep, form, showHelperTaste]);
 
   const goNextStep = useCallback(() => {
     void Haptics.selectionAsync();
@@ -247,35 +245,28 @@ export default function HomeScreen() {
     }
 
     let next = (diagStep + 1) as DiagnosisStep;
-    // Skip flow step for french press
-    if (next === 5 && shouldSkipFlow && mode === "normal") {
+    // Skip flow step (step 4) for french press
+    if (next === 4 && shouldSkipFlow) {
       setForm((f) => ({ ...f, flow: "unknown" }));
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      setStep("suggestion");
-      scrollRef.current?.scrollTo({ y: 0, animated: false });
-      return;
-    }
-    if (next === 5 && shouldSkipFlow && mode === "detailed") {
-      setForm((f) => ({ ...f, flow: "unknown" }));
-      next = 6 as DiagnosisStep;
+      next = 5 as DiagnosisStep;
     }
 
     setDiagStep(next);
     scrollRef.current?.scrollTo({ y: 0, animated: true });
-  }, [diagStep, getEffectiveMaxStep, shouldSkipFlow, mode]);
+  }, [diagStep, getEffectiveMaxStep, shouldSkipFlow]);
 
   const goPrevStep = useCallback(() => {
     void Haptics.selectionAsync();
     if (diagStep === 1) return;
 
     let prev = (diagStep - 1) as DiagnosisStep;
-    // Skip flow step going back for french press
-    if (prev === 5 && shouldSkipFlow) {
-      prev = 4 as DiagnosisStep;
+    // Skip flow step (step 4) going back for french press
+    if (prev === 4 && shouldSkipFlow) {
+      prev = 3 as DiagnosisStep;
     }
 
-    if (prev === 1 && showHelperTaste) {
-      // stay on step 1 but we're in helper mode, that's fine
+    if (prev === 5 && showHelperTaste) {
+      // stay on step 5 but we're in helper mode, that's fine
     }
 
     setDiagStep(prev);
@@ -495,15 +486,15 @@ export default function HomeScreen() {
   const diagStepLabel = (() => {
     switch (diagStep) {
       case 1:
-        return showHelperTaste ? "こんな感じはありますか？" : "今のコーヒー、何が気になりますか？";
-      case 2:
-        return "使っている器具は？";
-      case 3:
         return "豆の焙煎度は？";
-      case 4:
+      case 2:
         return "コーヒーの粉量は？";
-      case 5:
+      case 3:
+        return "使っている器具は？";
+      case 4:
         return shouldSkipFlow ? "お湯の温度は？" : "お湯が落ちるのは？";
+      case 5:
+        return showHelperTaste ? "こんな感じはありますか？" : "今のコーヒー、何が気になりますか？";
       case 6:
         return "お湯の温度は？";
       default:
@@ -578,45 +569,8 @@ export default function HomeScreen() {
                 </Pressable>
               ) : null}
 
-              {/* Step 1: Taste */}
-              {diagStep === 1 && !showHelperTaste ? (
-                <SelectionCard
-                  title={diagStepLabel}
-                  options={tasteOptions}
-                  selectedValue={form.taste ?? (showHelperTaste ? ("unknown" as TasteKey) : null)}
-                  onSelect={handleTasteSelect}
-                  testId="taste-selector"
-                />
-              ) : null}
-
-              {/* Step 1b: Helper taste */}
-              {diagStep === 1 && showHelperTaste ? (
-                <SelectionCard
-                  title={diagStepLabel}
-                  description="迷うときは、最も気になった感覚を1つ選んでください"
-                  options={helperTasteOptions}
-                  selectedValue={(form.helperTaste ?? null) as (HelperTasteKey | "none") | null}
-                  onSelect={handleHelperSelect}
-                  testId="helper-selector"
-                />
-              ) : null}
-
-              {/* Step 2: Equipment */}
-              {diagStep === 2 ? (
-                <SelectionCard
-                  title={diagStepLabel}
-                  options={equipmentOptions}
-                  selectedValue={form.equipment}
-                  onSelect={(value) => {
-                    void Haptics.selectionAsync();
-                    setForm((f) => ({ ...f, equipment: value as EquipmentKey }));
-                  }}
-                  testId="equipment-selector"
-                />
-              ) : null}
-
-              {/* Step 3: Roast */}
-              {diagStep === 3 ? (
+              {/* Step 1: Roast */}
+              {diagStep === 1 ? (
                 <SelectionCard
                   title={diagStepLabel}
                   options={roastOptions}
@@ -629,8 +583,8 @@ export default function HomeScreen() {
                 />
               ) : null}
 
-              {/* Step 4: Dose (optional) */}
-              {diagStep === 4 ? (
+              {/* Step 2: Dose (optional) */}
+              {diagStep === 2 ? (
                 <View style={styles.sectionCard} testID="dose-input">
                   <Text style={styles.sectionTitle}>{diagStepLabel}</Text>
                   <Text style={styles.sectionDescription}>分からなければスキップしてOK</Text>
@@ -652,8 +606,22 @@ export default function HomeScreen() {
                 </View>
               ) : null}
 
-              {/* Step 5: Flow (skipped for french press) */}
-              {diagStep === 5 && !shouldSkipFlow ? (
+              {/* Step 3: Equipment */}
+              {diagStep === 3 ? (
+                <SelectionCard
+                  title={diagStepLabel}
+                  options={equipmentOptions}
+                  selectedValue={form.equipment}
+                  onSelect={(value) => {
+                    void Haptics.selectionAsync();
+                    setForm((f) => ({ ...f, equipment: value as EquipmentKey }));
+                  }}
+                  testId="equipment-selector"
+                />
+              ) : null}
+
+              {/* Step 4: Flow (skipped for french press) */}
+              {diagStep === 4 && !shouldSkipFlow ? (
                 <SelectionCard
                   title={diagStepLabel}
                   options={flowOptions}
@@ -666,9 +634,31 @@ export default function HomeScreen() {
                 />
               ) : null}
 
-              {/* Step 6: Temp input (detailed mode only; or step 5 for french press detailed) */}
-              {((diagStep === 5 && shouldSkipFlow && mode === "detailed") ||
-                (diagStep === 6 && mode === "detailed")) ? (
+              {/* Step 5: Taste */}
+              {diagStep === 5 && !showHelperTaste ? (
+                <SelectionCard
+                  title={diagStepLabel}
+                  options={tasteOptions}
+                  selectedValue={form.taste ?? (showHelperTaste ? ("unknown" as TasteKey) : null)}
+                  onSelect={handleTasteSelect}
+                  testId="taste-selector"
+                />
+              ) : null}
+
+              {/* Step 5b: Helper taste */}
+              {diagStep === 5 && showHelperTaste ? (
+                <SelectionCard
+                  title={diagStepLabel}
+                  description="迷うときは、最も気になった感覚を1つ選んでください"
+                  options={helperTasteOptions}
+                  selectedValue={(form.helperTaste ?? null) as (HelperTasteKey | "none") | null}
+                  onSelect={handleHelperSelect}
+                  testId="helper-selector"
+                />
+              ) : null}
+
+              {/* Step 6: Temp input (detailed mode only) */}
+              {(diagStep === 6 && mode === "detailed") ? (
                 <View style={styles.sectionCard} testID="temp-input">
                   <Text style={styles.sectionTitle}>{diagStepLabel}</Text>
 
