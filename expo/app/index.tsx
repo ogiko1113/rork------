@@ -47,7 +47,7 @@ import {
 } from "@/types/coffee";
 
 type AppStep = "diagnosis" | "suggestion" | "result";
-type DiagnosisStep = 1 | 2 | 3 | 4 | 5;
+type DiagnosisStep = 1 | 2 | 3 | 4 | 5 | 6;
 type UnknownTasteValue = TasteKey | "unknown";
 type ResultChoice = "improved" | "still_off" | "reversed" | "unclear";
 
@@ -56,6 +56,7 @@ const initialForm: DiagnosisForm = {
   helperTaste: null,
   equipment: null,
   roast: null,
+  dose: null,
   flow: null,
   temp: null,
   tempRange: "unknown",
@@ -165,6 +166,7 @@ export default function HomeScreen() {
   const [showHelperTaste, setShowHelperTaste] = useState(false);
   const [form, setForm] = useState<DiagnosisForm>(initialForm);
   const [mode, setMode] = useState<DiagnosisMode>("normal");
+  const [doseInput, setDoseInput] = useState("");
   const [tempInput, setTempInput] = useState("");
   const [tempError, setTempError] = useState<string | null>(null);
   const [resultChoice, setResultChoice] = useState<ResultChoice | null>(null);
@@ -207,9 +209,9 @@ export default function HomeScreen() {
 
   const getEffectiveMaxStep = useCallback((): DiagnosisStep => {
     if (mode === "normal") {
-      return shouldSkipFlow ? 3 : 4;
+      return shouldSkipFlow ? 4 : 5;
     }
-    return shouldSkipFlow ? 4 : 5;
+    return shouldSkipFlow ? 5 : 6;
   }, [mode, shouldSkipFlow]);
 
   const canGoNext = useCallback((): boolean => {
@@ -221,10 +223,12 @@ export default function HomeScreen() {
       case 3:
         return form.roast !== null;
       case 4:
-        if (shouldSkipFlow && mode === "normal") return false; // shouldn't be here
-        if (shouldSkipFlow && mode === "detailed") return true; // temp step - always ok (can be unknown)
-        return form.flow !== null;
+        return true; // dose is optional
       case 5:
+        if (shouldSkipFlow && mode === "normal") return false; // shouldn't be here
+        if (shouldSkipFlow && mode === "detailed") return true; // temp step - always ok
+        return form.flow !== null;
+      case 6:
         return true; // temp is optional
       default:
         return false;
@@ -244,18 +248,16 @@ export default function HomeScreen() {
 
     let next = (diagStep + 1) as DiagnosisStep;
     // Skip flow step for french press
-    if (next === 4 && shouldSkipFlow && mode === "normal") {
-      // go straight to submit
+    if (next === 5 && shouldSkipFlow && mode === "normal") {
       setForm((f) => ({ ...f, flow: "unknown" }));
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setStep("suggestion");
       scrollRef.current?.scrollTo({ y: 0, animated: false });
       return;
     }
-    if (next === 4 && shouldSkipFlow && mode === "detailed") {
-      // skip flow, go to temp
+    if (next === 5 && shouldSkipFlow && mode === "detailed") {
       setForm((f) => ({ ...f, flow: "unknown" }));
-      next = 5 as DiagnosisStep;
+      next = 6 as DiagnosisStep;
     }
 
     setDiagStep(next);
@@ -268,8 +270,8 @@ export default function HomeScreen() {
 
     let prev = (diagStep - 1) as DiagnosisStep;
     // Skip flow step going back for french press
-    if (prev === 4 && shouldSkipFlow) {
-      prev = 3 as DiagnosisStep;
+    if (prev === 5 && shouldSkipFlow) {
+      prev = 4 as DiagnosisStep;
     }
 
     if (prev === 1 && showHelperTaste) {
@@ -315,6 +317,18 @@ export default function HomeScreen() {
       helperTaste: value,
       taste: tasteMap[value],
     }));
+  }, []);
+
+  const handleDoseInputChange = useCallback((text: string) => {
+    setDoseInput(text);
+    if (text === "") {
+      setForm((f) => ({ ...f, dose: null }));
+      return;
+    }
+    const num = parseFloat(text);
+    if (!isNaN(num) && num > 0) {
+      setForm((f) => ({ ...f, dose: num }));
+    }
   }, []);
 
   const handleTempPreset = useCallback((celsius: number) => {
@@ -379,6 +393,7 @@ export default function HomeScreen() {
       equipment: form.equipment,
       roast: form.roast,
       taste: form.taste,
+      dose: form.dose,
       flow: form.flow ?? "unknown",
       temp: form.temp,
       tempRange: form.tempRange,
@@ -431,6 +446,7 @@ export default function HomeScreen() {
           setForm({ ...initialForm, mode });
           setDiagStep(1);
           setShowHelperTaste(false);
+          setDoseInput("");
           setTempInput("");
           setTempError(null);
           setStep("diagnosis");
@@ -485,8 +501,10 @@ export default function HomeScreen() {
       case 3:
         return "豆の焙煎度は？";
       case 4:
-        return shouldSkipFlow ? "お湯の温度は？" : "お湯が落ちるのは？";
+        return "コーヒーの粉量は？";
       case 5:
+        return shouldSkipFlow ? "お湯の温度は？" : "お湯が落ちるのは？";
+      case 6:
         return "お湯の温度は？";
       default:
         return "";
@@ -611,8 +629,31 @@ export default function HomeScreen() {
                 />
               ) : null}
 
-              {/* Step 4: Flow (skipped for french press in normal mode) */}
-              {diagStep === 4 && !shouldSkipFlow ? (
+              {/* Step 4: Dose (optional) */}
+              {diagStep === 4 ? (
+                <View style={styles.sectionCard} testID="dose-input">
+                  <Text style={styles.sectionTitle}>{diagStepLabel}</Text>
+                  <Text style={styles.sectionDescription}>分からなければスキップしてOK</Text>
+                  <View style={styles.tempInputRow}>
+                    <TextInput
+                      style={styles.tempTextInput}
+                      value={doseInput}
+                      onChangeText={handleDoseInputChange}
+                      keyboardType="numeric"
+                      placeholder="例: 15"
+                      placeholderTextColor={coffeeTheme.textMuted}
+                      maxLength={5}
+                      returnKeyType="done"
+                      onSubmitEditing={() => Keyboard.dismiss()}
+                      testID="dose-free-input"
+                    />
+                    <Text style={styles.tempUnit}>g</Text>
+                  </View>
+                </View>
+              ) : null}
+
+              {/* Step 5: Flow (skipped for french press) */}
+              {diagStep === 5 && !shouldSkipFlow ? (
                 <SelectionCard
                   title={diagStepLabel}
                   options={flowOptions}
@@ -625,9 +666,9 @@ export default function HomeScreen() {
                 />
               ) : null}
 
-              {/* Step 4 (french press detailed) or Step 5: Temp input */}
-              {((diagStep === 4 && shouldSkipFlow && mode === "detailed") ||
-                (diagStep === 5 && mode === "detailed")) ? (
+              {/* Step 6: Temp input (detailed mode only; or step 5 for french press detailed) */}
+              {((diagStep === 5 && shouldSkipFlow && mode === "detailed") ||
+                (diagStep === 6 && mode === "detailed")) ? (
                 <View style={styles.sectionCard} testID="temp-input">
                   <Text style={styles.sectionTitle}>{diagStepLabel}</Text>
 

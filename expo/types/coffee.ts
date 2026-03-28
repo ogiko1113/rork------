@@ -35,6 +35,7 @@ export interface DiagnosisForm {
   helperTaste: HelperTasteKey | null;
   equipment: EquipmentKey | null;
   roast: RoastKey | null;
+  dose: number | null;
   flow: FlowKey | null;
   temp: number | null;
   tempRange: TempRange;
@@ -53,6 +54,7 @@ export interface BrewRecord {
   equipment: EquipmentKey;
   roast: RoastKey;
   taste: TasteKey;
+  dose: number | null;
   flow: FlowKey;
   temp: number | null;
   tempRange: TempRange;
