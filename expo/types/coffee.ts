@@ -7,19 +7,27 @@ export type EquipmentKey =
   | "other";
 export type RoastKey = "light" | "medium" | "dark" | "unknown";
 export type FlowKey = "fast" | "normal" | "slow" | "unknown";
+export type TempRange = "low" | "mid" | "high" | "unknown";
 export type HelperTasteKey = TasteKey | "aroma_weak";
+export type DiagnosisMode = "normal" | "detailed";
 
-export interface CoffeeRule {
-  equipment: EquipmentKey;
-  roast: RoastKey;
-  taste: TasteKey;
-  flow: FlowKey;
+export interface CorrectionRule {
+  id: string;
+  equipment: string;
+  roast: string;
+  taste: string;
+  flow: string;
+  temp: string;
   suggestion: string;
   reason: string;
 }
 
-export interface CoffeeRulesJson {
-  rules: CoffeeRule[];
+export interface CorrectionRulesJson {
+  version: string;
+  description: string;
+  temp_ranges: Record<string, { min: number; max: number; label: string }>;
+  rules: CorrectionRule[];
+  rule_matching_priority: string[];
 }
 
 export interface DiagnosisForm {
@@ -28,22 +36,39 @@ export interface DiagnosisForm {
   equipment: EquipmentKey | null;
   roast: RoastKey | null;
   flow: FlowKey | null;
+  temp: number | null;
+  tempRange: TempRange;
+  mode: DiagnosisMode;
 }
 
 export interface SuggestionResult {
   suggestion: string;
   reason: string;
-  matchedRule?: CoffeeRule;
-  fallbackType: "exact" | "general" | "equipment";
+  matchedRule?: CorrectionRule;
+  fallbackType: "exact" | "general" | "equipment" | "temp_fallback" | "flow_fallback";
 }
 
-export interface SavedSuggestion {
+export interface BrewRecord {
   id: string;
-  createdAt: string;
-  suggestion: string;
-  reason: string;
-  taste: TasteKey;
   equipment: EquipmentKey;
   roast: RoastKey;
+  taste: TasteKey;
   flow: FlowKey;
+  temp: number | null;
+  tempRange: TempRange;
+  mode: DiagnosisMode;
+  suggestion: string;
+  reason: string;
+  result: "improved" | "still_off" | "reversed" | "unclear" | null;
+  previousBrewId: string | null;
+  createdAt: string;
 }
+
+export interface UserSettings {
+  diagnosisMode: DiagnosisMode;
+}
+
+// Keep backward compat alias
+export type CoffeeRule = CorrectionRule;
+export type CoffeeRulesJson = CorrectionRulesJson;
+export type SavedSuggestion = BrewRecord;
