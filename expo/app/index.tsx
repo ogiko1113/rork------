@@ -18,7 +18,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { ChevronLeft, Coffee, Droplets, RotateCcw, Save, Share2, Sparkles } from "lucide-react-native";
+import { ChevronLeft, Clock, Coffee, Droplets, RotateCcw, Save, Share2, Sparkles } from "lucide-react-native";
 
 import {
   equipmentOptions,
@@ -32,6 +32,7 @@ import {
   TEMP_MIN,
 } from "@/constants/coffeeOptions";
 import { coffeeTheme } from "@/constants/coffeeTheme";
+import { router } from "expo-router";
 import { getSuggestion, getTempRange } from "@/lib/coffeeRules";
 import { getSavedSuggestions, getUserSettings, saveBrewRecord, saveDiagnosisMode } from "@/lib/storage";
 import {
@@ -174,7 +175,7 @@ export default function HomeScreen() {
 
   // Load saved mode on mount
   useEffect(() => {
-    getUserSettings().then((s) => {
+    void getUserSettings().then((s) => {
       setMode(s.diagnosisMode);
       setForm((f) => ({ ...f, mode: s.diagnosisMode }));
     });
@@ -200,7 +201,7 @@ export default function HomeScreen() {
 
   // --- Diagnosis Step Helpers ---
 
-  const maxDiagStep: DiagnosisStep = mode === "detailed" ? 5 : 4;
+  const _maxDiagStep: DiagnosisStep = mode === "detailed" ? 5 : 4;
 
   const shouldSkipFlow = form.equipment === "french_press";
 
@@ -751,6 +752,15 @@ export default function HomeScreen() {
                 }}
                 testId="go-to-result"
               />
+
+              <Pressable
+                onPress={() => router.push("/history")}
+                style={styles.historyLink}
+                testID="go-to-history"
+              >
+                <Clock color={coffeeTheme.textMuted} size={15} />
+                <Text style={styles.historyLinkText}>履歴を見る</Text>
+              </Pressable>
             </View>
           ) : null}
 
@@ -1224,5 +1234,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: coffeeTheme.textMuted,
     fontWeight: "600",
+  },
+  historyLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minHeight: 42,
+  },
+  historyLinkText: {
+    fontSize: 14,
+    color: coffeeTheme.textMuted,
+    fontWeight: "600",
+    textDecorationLine: "underline",
   },
 });
