@@ -63,13 +63,20 @@ const initialForm: DiagnosisForm = {
   mode: "normal",
 };
 
-const buttonHeight = 58;
-const accentShadow = {
+const buttonHeight = 54;
+const cardShadow = {
   shadowColor: coffeeTheme.shadow,
-  shadowOffset: { width: 0, height: 10 },
+  shadowOffset: { width: 0, height: 4 },
   shadowOpacity: 1,
-  shadowRadius: 20,
-  elevation: 6,
+  shadowRadius: 12,
+  elevation: 3,
+};
+const accentShadow = {
+  shadowColor: "rgba(111, 78, 55, 0.25)",
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 1,
+  shadowRadius: 16,
+  elevation: 5,
 };
 
 // --- Reusable Components ---
@@ -104,7 +111,7 @@ function SelectionCard<T extends string>({
               style={({ pressed }) => [
                 styles.optionButton,
                 selected ? styles.optionButtonSelected : null,
-                pressed ? styles.optionButtonPressed : null,
+                pressed && !selected ? styles.optionButtonPressed : null,
               ]}
               testID={`${testId}-${option.value}`}
             >
@@ -137,23 +144,38 @@ function PrimaryButton({
   testId: string;
   subtle?: boolean;
 }) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = useCallback(() => {
+    Animated.spring(scaleAnim, { toValue: 0.97, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
+  }, [scaleAnim]);
+
+  const handlePressOut = useCallback(() => {
+    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
+  }, [scaleAnim]);
+
   return (
     <Pressable
       accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.primaryButton,
-        subtle ? styles.secondaryButton : null,
-        disabled ? styles.buttonDisabled : null,
-        pressed && !disabled ? styles.primaryButtonPressed : null,
-      ]}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       testID={testId}
     >
-      <View style={styles.primaryButtonContent}>
-        {icon}
-        <Text style={[styles.primaryButtonText, subtle ? styles.secondaryButtonText : null]}>{label}</Text>
-      </View>
+      <Animated.View
+        style={[
+          styles.primaryButton,
+          subtle ? styles.secondaryButton : null,
+          disabled ? styles.buttonDisabled : null,
+          { transform: [{ scale: scaleAnim }] },
+        ]}
+      >
+        <View style={styles.primaryButtonContent}>
+          {icon}
+          <Text style={[styles.primaryButtonText, subtle ? styles.secondaryButtonText : null]}>{label}</Text>
+        </View>
+      </Animated.View>
     </Pressable>
   );
 }
@@ -529,7 +551,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.screen}>
       <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient colors={["#FCF8F3", "#F4E8D8"]} style={styles.backgroundGlow} pointerEvents="none" />
+      <LinearGradient colors={["#FAF6F1", "#F0E4D6"]} style={styles.backgroundGlow} pointerEvents="none" />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.headerRow}>
           <View>
@@ -539,7 +561,7 @@ export default function HomeScreen() {
             </Text>
           </View>
           <Pressable style={styles.badge} onPress={() => router.push("/history")} testID="badge-go-to-history">
-            <Coffee color={coffeeTheme.accentStrong} size={18} />
+            <Coffee color={coffeeTheme.accent} size={16} />
             <Text style={styles.badgeText}>{savedCount}件保存</Text>
           </Pressable>
         </View>
@@ -762,9 +784,9 @@ export default function HomeScreen() {
             <View style={styles.stageContainer} testID="suggestion-screen">
               <Text style={styles.smallLabel}>次に変えるのはこれ</Text>
 
-              <View style={[styles.suggestionCard, accentShadow]}>
+              <View style={styles.suggestionCard}>
                 <View style={styles.suggestionPill}>
-                  <Droplets color={coffeeTheme.accentStrong} size={16} />
+                  <Droplets color={coffeeTheme.accent} size={14} />
                   <Text style={styles.suggestionPillText}>次の一杯で変えることは1つだけ</Text>
                 </View>
                 <Text style={styles.suggestionText}>{suggestion.suggestion}</Text>
@@ -781,7 +803,7 @@ export default function HomeScreen() {
                       { text: "共有する", onPress: () => void handleShareFallback() },
                     ]);
                   }}
-                  icon={<Share2 color={coffeeTheme.accentStrong} size={18} />}
+                  icon={<Share2 color={coffeeTheme.accent} size={18} />}
                   testId="share-suggestion"
                   subtle
                 />
@@ -951,193 +973,196 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 18,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 10,
     gap: 12,
   },
   eyebrow: {
-    fontSize: 13,
-    color: coffeeTheme.textMuted,
-    letterSpacing: 1.8,
+    fontSize: 12,
+    color: coffeeTheme.caramel,
+    letterSpacing: 2.2,
     textTransform: "uppercase",
-    marginBottom: 4,
+    fontWeight: "700" as const,
+    marginBottom: 3,
   },
   headerTitle: {
     fontSize: 24,
-    lineHeight: 30,
+    lineHeight: 31,
     color: coffeeTheme.text,
-    fontWeight: "700",
-    maxWidth: 250,
+    fontWeight: "800" as const,
+    maxWidth: 240,
   },
   badge: {
-    borderRadius: 999,
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: coffeeTheme.accentSoft,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderColor: coffeeTheme.cardBorder,
+    gap: 6,
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: "600",
-    color: coffeeTheme.accentStrong,
+    fontWeight: "700" as const,
+    color: coffeeTheme.accent,
   },
   modeRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 18,
-    paddingBottom: 4,
+    paddingHorizontal: 20,
+    paddingBottom: 6,
   },
   modeLabel: {
     fontSize: 13,
-    fontWeight: "700",
-    color: "#8C8C8C",
+    fontWeight: "700" as const,
+    color: coffeeTheme.textMuted,
   },
   modeLabelDetailed: {
-    color: "#D4A574",
+    color: coffeeTheme.caramel,
   },
   modeToggleText: {
     fontSize: 13,
-    color: coffeeTheme.accent,
-    fontWeight: "500",
+    color: coffeeTheme.caramel,
+    fontWeight: "600" as const,
   },
   toast: {
-    position: "absolute",
+    position: "absolute" as const,
     top: 100,
     left: 24,
     right: 24,
     backgroundColor: coffeeTheme.text,
     borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    alignItems: "center",
+    paddingVertical: 11,
+    paddingHorizontal: 18,
+    alignItems: "center" as const,
     zIndex: 100,
   },
   toastText: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#FFF9F0",
+    fontWeight: "600" as const,
+    color: "#FFF8F0",
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 18,
-    paddingTop: 6,
-    paddingBottom: 32,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 40,
   },
   stageContainer: {
-    gap: 14,
+    gap: 16,
   },
   progressRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   progressText: {
     fontSize: 13,
     color: coffeeTheme.textMuted,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     alignSelf: "flex-start",
+    paddingVertical: 2,
   },
   backButtonText: {
     fontSize: 14,
     color: coffeeTheme.textMuted,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   sectionCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: coffeeTheme.cardBorder,
-    gap: 10,
+    borderRadius: 16,
+    padding: 18,
+    gap: 12,
+    ...cardShadow,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: "700",
+    fontSize: 18,
+    fontWeight: "700" as const,
     color: coffeeTheme.text,
+    lineHeight: 24,
   },
   sectionDescription: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
     color: coffeeTheme.textMuted,
   },
   smallLabel: {
     fontSize: 14,
     color: coffeeTheme.textMuted,
-    fontWeight: "500",
+    fontWeight: "600" as const,
   },
   optionGrid: {
     gap: 8,
   },
   optionButton: {
     minHeight: 56,
-    borderRadius: 16,
+    borderRadius: 12,
     backgroundColor: coffeeTheme.background,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1.5,
     borderColor: coffeeTheme.cardBorder,
     justifyContent: "center",
     gap: 4,
   },
   optionButtonSelected: {
-    backgroundColor: coffeeTheme.accentStrong,
-    borderColor: coffeeTheme.accentStrong,
+    backgroundColor: coffeeTheme.accent,
+    borderColor: coffeeTheme.accent,
   },
   optionButtonPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.985 }],
+    backgroundColor: coffeeTheme.accentSoft,
+    borderColor: coffeeTheme.caramel,
   },
   optionLabel: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "700" as const,
     color: coffeeTheme.text,
   },
   optionLabelSelected: {
-    color: "#FFF9F0",
+    color: "#FFF8F0",
   },
   optionDescription: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 17,
     color: coffeeTheme.textMuted,
   },
   optionDescriptionSelected: {
-    color: "rgba(255,249,240,0.82)",
+    color: "rgba(255,248,240,0.78)",
   },
   primaryButton: {
     minHeight: buttonHeight,
-    borderRadius: 20,
+    borderRadius: 12,
     backgroundColor: coffeeTheme.accent,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     ...accentShadow,
   },
   secondaryButton: {
     backgroundColor: "#FFFFFF",
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: coffeeTheme.cardBorder,
-    shadowOpacity: 0,
-    elevation: 0,
+    shadowColor: coffeeTheme.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 1,
   },
   buttonDisabled: {
-    opacity: 0.45,
+    opacity: 0.4,
   },
   primaryButtonPressed: {
-    transform: [{ scale: 0.985 }],
+    transform: [{ scale: 0.97 }],
   },
   primaryButtonContent: {
     flexDirection: "row",
@@ -1147,13 +1172,12 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#FFF9F0",
+    fontWeight: "700" as const,
+    color: "#FFF8F0",
   },
   secondaryButtonText: {
-    color: coffeeTheme.accentStrong,
+    color: coffeeTheme.accent,
   },
-  // Temp input styles
   tempPresetRow: {
     flexDirection: "row",
     gap: 8,
@@ -1163,21 +1187,21 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 12,
     backgroundColor: coffeeTheme.background,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: coffeeTheme.cardBorder,
     justifyContent: "center",
     alignItems: "center",
   },
   tempPresetText: {
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "700" as const,
     color: coffeeTheme.text,
   },
   boilingButton: {
     minHeight: 48,
     borderRadius: 12,
     backgroundColor: coffeeTheme.background,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: coffeeTheme.cardBorder,
     justifyContent: "center",
     alignItems: "center",
@@ -1191,8 +1215,8 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     borderRadius: 12,
-    backgroundColor: coffeeTheme.background,
-    borderWidth: 1,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
     borderColor: coffeeTheme.cardBorder,
     paddingHorizontal: 14,
     fontSize: 16,
@@ -1200,7 +1224,7 @@ const styles = StyleSheet.create({
   },
   tempUnit: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "600" as const,
     color: coffeeTheme.textMuted,
   },
   tempErrorText: {
@@ -1209,41 +1233,39 @@ const styles = StyleSheet.create({
   },
   textLink: {
     fontSize: 14,
-    color: coffeeTheme.accent,
-    fontWeight: "500",
-    textDecorationLine: "underline",
+    color: coffeeTheme.caramel,
+    fontWeight: "600" as const,
+    textDecorationLine: "underline" as const,
   },
-  // Suggestion
   suggestionCard: {
-    borderRadius: 24,
+    borderRadius: 20,
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingVertical: 22,
-    borderWidth: 1,
-    borderColor: coffeeTheme.cardBorder,
-    gap: 12,
+    paddingHorizontal: 22,
+    paddingVertical: 24,
+    gap: 14,
+    ...cardShadow,
   },
   suggestionPill: {
-    alignSelf: "flex-start",
+    alignSelf: "flex-start" as const,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
     borderRadius: 999,
-    backgroundColor: coffeeTheme.accentSoft,
+    backgroundColor: coffeeTheme.caramelSoft,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 7,
   },
   suggestionPillText: {
     fontSize: 12,
-    fontWeight: "600",
-    color: coffeeTheme.accentStrong,
+    fontWeight: "700" as const,
+    color: coffeeTheme.accent,
   },
   suggestionText: {
-    fontSize: 30,
-    lineHeight: 40,
-    fontWeight: "800",
+    fontSize: 28,
+    lineHeight: 38,
+    fontWeight: "800" as const,
     color: coffeeTheme.text,
-    marginTop: 4,
+    marginTop: 2,
   },
   reasonText: {
     fontSize: 16,
@@ -1253,35 +1275,33 @@ const styles = StyleSheet.create({
   footnote: {
     fontSize: 13,
     color: coffeeTheme.textMuted,
-    marginTop: 4,
+    marginTop: 2,
+    fontStyle: "italic" as const,
   },
   actionRow: {
     gap: 10,
   },
-  // Result
   resultIntroCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: coffeeTheme.cardBorder,
+    borderRadius: 16,
+    padding: 20,
     gap: 8,
+    ...cardShadow,
   },
   resultGrid: {
     gap: 10,
   },
   feedbackCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: coffeeTheme.cardBorder,
-    gap: 10,
+    borderRadius: 16,
+    padding: 20,
+    gap: 12,
+    ...cardShadow,
   },
   feedbackTitle: {
     fontSize: 17,
     lineHeight: 24,
-    fontWeight: "700",
+    fontWeight: "700" as const,
     color: coffeeTheme.text,
   },
   inlineReset: {
@@ -1289,24 +1309,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    minHeight: 42,
+    minHeight: 44,
   },
   inlineResetText: {
     fontSize: 14,
     color: coffeeTheme.textMuted,
-    fontWeight: "600",
+    fontWeight: "600" as const,
   },
   historyLink: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    minHeight: 42,
+    minHeight: 44,
   },
   historyLinkText: {
     fontSize: 14,
     color: coffeeTheme.textMuted,
-    fontWeight: "600",
-    textDecorationLine: "underline",
+    fontWeight: "600" as const,
+    textDecorationLine: "underline" as const,
   },
 });

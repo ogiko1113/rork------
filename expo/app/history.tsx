@@ -70,6 +70,14 @@ function formatDate(iso: string): string {
   return `${month}/${day} ${hours}:${minutes}`;
 }
 
+const cardShadow = {
+  shadowColor: coffeeTheme.shadow,
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 1,
+  shadowRadius: 12,
+  elevation: 3,
+};
+
 const RecordCard = React.memo(function RecordCard({
   record,
   onReport,
@@ -92,7 +100,16 @@ const RecordCard = React.memo(function RecordCard({
     <View style={styles.card} testID={`history-card-${record.id}`}>
       <View style={styles.cardHeader}>
         <Text style={styles.dateText}>{formatDate(record.createdAt)}</Text>
+        {hasResult ? (
+          <View style={styles.resultBadgeInline}>
+            <Text style={styles.resultBadgeInlineText}>
+              {resultLabels[record.result!] ?? record.result}
+            </Text>
+          </View>
+        ) : null}
       </View>
+
+      <View style={styles.divider} />
 
       <View style={styles.detailsSection}>
         <DetailRow label="焙煎度" value={roastLabels[record.roast]} />
@@ -109,16 +126,7 @@ const RecordCard = React.memo(function RecordCard({
         <Text style={styles.suggestionText}>{record.suggestion}</Text>
       </View>
 
-      {hasResult ? (
-        <View style={styles.resultRow}>
-          <Text style={styles.resultLabel}>結果</Text>
-          <View style={styles.resultBadge}>
-            <Text style={styles.resultBadgeText}>
-              {resultLabels[record.result!] ?? record.result}
-            </Text>
-          </View>
-        </View>
-      ) : showOptions ? (
+      {hasResult ? null : showOptions ? (
         <View style={styles.optionsSection}>
           <Text style={styles.optionsTitle}>結果を選んでください</Text>
           <View style={styles.optionsGrid}>
@@ -212,16 +220,18 @@ export default function HistoryScreen() {
             testID="history-back"
             accessibilityRole="button"
           >
-            <ChevronLeft color={coffeeTheme.textMuted} size={22} />
+            <ChevronLeft color={coffeeTheme.accent} size={22} />
             <Text style={styles.backText}>戻る</Text>
           </Pressable>
           <Text style={styles.headerTitle}>診断の履歴</Text>
-          <View style={styles.backButton} />
+          <View style={styles.headerSpacer} />
         </View>
 
         {records.length === 0 ? (
           <View style={styles.emptyContainer}>
+            <Text style={styles.emptyEmoji}>☕</Text>
             <Text style={styles.emptyText}>まだ記録がありません</Text>
+            <Text style={styles.emptySubtext}>診断を保存するとここに表示されます</Text>
           </View>
         ) : (
           <FlatList
@@ -251,10 +261,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: coffeeTheme.cardBorder,
+    backgroundColor: coffeeTheme.background,
   },
   backButton: {
     flexDirection: "row",
@@ -264,39 +275,48 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 15,
-    color: coffeeTheme.textMuted,
+    color: coffeeTheme.accent,
     fontWeight: "600" as const,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "700" as const,
     color: coffeeTheme.text,
+  },
+  headerSpacer: {
+    minWidth: 64,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    gap: 8,
+    paddingBottom: 60,
+  },
+  emptyEmoji: {
+    fontSize: 48,
+    marginBottom: 8,
   },
   emptyText: {
-    fontSize: 15,
+    fontSize: 17,
+    color: coffeeTheme.text,
+    fontWeight: "600" as const,
+  },
+  emptySubtext: {
+    fontSize: 14,
     color: coffeeTheme.textMuted,
-    fontWeight: "500" as const,
   },
   listContent: {
-    padding: 16,
-    gap: 12,
-    paddingBottom: 32,
+    padding: 18,
+    gap: 14,
+    paddingBottom: 40,
   },
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-    shadowColor: "rgba(74, 46, 28, 0.08)",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: 16,
+    padding: 18,
+    gap: 14,
+    ...cardShadow,
   },
   cardHeader: {
     flexDirection: "row",
@@ -308,87 +328,79 @@ const styles = StyleSheet.create({
     color: coffeeTheme.textMuted,
     fontWeight: "600" as const,
   },
+  resultBadgeInline: {
+    backgroundColor: coffeeTheme.caramelSoft,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  resultBadgeInlineText: {
+    fontSize: 12,
+    fontWeight: "700" as const,
+    color: coffeeTheme.accent,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: coffeeTheme.cardBorder,
+    marginVertical: -2,
+  },
   detailsSection: {
-    gap: 6,
+    gap: 7,
   },
   detailRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 3,
+    paddingVertical: 2,
   },
   detailLabel: {
-    fontSize: 13,
+    fontSize: 14,
     color: coffeeTheme.textMuted,
     fontWeight: "500" as const,
   },
   detailValue: {
-    fontSize: 13,
+    fontSize: 14,
     color: coffeeTheme.text,
     fontWeight: "600" as const,
   },
   suggestionSection: {
-    backgroundColor: coffeeTheme.background,
-    borderRadius: 8,
-    padding: 12,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: coffeeTheme.cardBorder,
+    backgroundColor: coffeeTheme.accentSoft,
+    borderRadius: 12,
+    padding: 14,
+    gap: 6,
   },
   suggestionLabel: {
     fontSize: 11,
     fontWeight: "700" as const,
-    color: coffeeTheme.textMuted,
+    color: coffeeTheme.accent,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
   suggestionText: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 23,
     fontWeight: "600" as const,
     color: coffeeTheme.text,
   },
-  resultRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: 2,
-  },
-  resultLabel: {
-    fontSize: 13,
-    color: coffeeTheme.textMuted,
-    fontWeight: "500" as const,
-  },
-  resultBadge: {
-    backgroundColor: coffeeTheme.accentSoft,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  resultBadgeText: {
-    fontSize: 12,
-    fontWeight: "700" as const,
-    color: coffeeTheme.accentStrong,
-  },
   reportButton: {
     backgroundColor: coffeeTheme.accent,
-    borderRadius: 10,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingVertical: 13,
     alignItems: "center",
   },
   reportButtonPressed: {
-    opacity: 0.8,
+    opacity: 0.85,
   },
   reportButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700" as const,
-    color: "#FFFFFF",
+    color: "#FFF8F0",
   },
   optionsSection: {
     gap: 8,
   },
   optionsTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "600" as const,
     color: coffeeTheme.textMuted,
     textAlign: "center",
@@ -398,24 +410,24 @@ const styles = StyleSheet.create({
   },
   optionButton: {
     backgroundColor: coffeeTheme.background,
-    borderRadius: 8,
-    paddingVertical: 11,
+    borderRadius: 12,
+    paddingVertical: 12,
     alignItems: "center",
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: coffeeTheme.cardBorder,
   },
   optionButtonPressed: {
-    backgroundColor: coffeeTheme.accentSoft,
-    borderColor: coffeeTheme.accent,
+    backgroundColor: coffeeTheme.caramelSoft,
+    borderColor: coffeeTheme.caramel,
   },
   optionButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600" as const,
     color: coffeeTheme.text,
   },
   cancelLink: {
     alignItems: "center",
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   cancelLinkText: {
     fontSize: 13,
