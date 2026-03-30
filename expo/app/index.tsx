@@ -813,6 +813,15 @@ export default function HomeScreen() {
                 <Clock color={coffeeTheme.textMuted} size={15} />
                 <Text style={styles.historyLinkText}>履歴を見る</Text>
               </Pressable>
+
+              <Pressable
+                onPress={resetDiagnosis}
+                style={styles.historyLink}
+                testID="restart-diagnosis"
+              >
+                <RotateCcw color={coffeeTheme.textMuted} size={15} />
+                <Text style={styles.historyLinkText}>最初から診断する</Text>
+              </Pressable>
             </View>
           ) : null}
 
