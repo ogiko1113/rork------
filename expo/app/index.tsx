@@ -234,8 +234,13 @@ export default function HomeScreen() {
   }, [diagStep, form, showHelperTaste]);
 
   const goNextStep = useCallback(() => {
+    if (!canGoNext()) {
+      console.log("[Diagnosis] goNextStep blocked — canGoNext() is false. diagStep:", diagStep, "taste:", form.taste);
+      return;
+    }
     void Haptics.selectionAsync();
     const effective = getEffectiveMaxStep();
+    console.log("[Diagnosis] goNextStep. diagStep:", diagStep, "effective:", effective, "taste:", form.taste, "equipment:", form.equipment);
     if (diagStep >= effective) {
       // Submit diagnosis
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -253,7 +258,7 @@ export default function HomeScreen() {
 
     setDiagStep(next);
     scrollRef.current?.scrollTo({ y: 0, animated: true });
-  }, [diagStep, getEffectiveMaxStep, shouldSkipFlow]);
+  }, [diagStep, getEffectiveMaxStep, shouldSkipFlow, canGoNext, form.taste, form.equipment]);
 
   const goPrevStep = useCallback(() => {
     void Haptics.selectionAsync();
@@ -456,6 +461,31 @@ export default function HomeScreen() {
   const handleResultFollowUp = useCallback(
     (taste: TasteKey) => {
       void Haptics.selectionAsync();
+
+      // Save current suggestion as "unclear" result before returning to diagnosis
+      if (form.taste && form.equipment && form.roast) {
+        const record: BrewRecord = {
+          id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          equipment: form.equipment,
+          roast: form.roast,
+          taste: form.taste,
+          dose: form.dose,
+          flow: form.flow ?? "unknown",
+          temp: form.temp,
+          tempRange: form.tempRange,
+          mode: form.mode,
+          suggestion: suggestion.suggestion,
+          reason: suggestion.reason,
+          result: "unclear",
+          previousBrewId: lastBrewId,
+          createdAt: new Date().toISOString(),
+        };
+        console.log("[Result] Saving unclear result with id:", record.id);
+        saveMutation.mutate(record);
+        setLastBrewId(record.id);
+      }
+
+      // Update taste from follow-up and return to diagnosis
       setForm((f) => ({ ...f, taste }));
       setTimeout(() => {
         setStep("diagnosis");
@@ -464,7 +494,7 @@ export default function HomeScreen() {
         scrollRef.current?.scrollTo({ y: 0, animated: false });
       }, 800);
     },
-    []
+    [form, suggestion, saveMutation, lastBrewId]
   );
 
   const resetDiagnosis = useCallback(() => {
@@ -729,7 +759,7 @@ export default function HomeScreen() {
               <PrimaryButton
                 label={isLastDiagStep ? "次の一杯を直す" : "次へ"}
                 onPress={goNextStep}
-                disabled={!canGoNext() && !isLastDiagStep}
+                disabled={!canGoNext()}
                 icon={isLastDiagStep ? <Sparkles color="#FFF9F0" size={18} /> : undefined}
                 testId="diag-next"
               />
