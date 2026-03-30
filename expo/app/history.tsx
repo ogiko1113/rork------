@@ -70,7 +70,7 @@ function formatDate(iso: string): string {
   return `${month}/${day} ${hours}:${minutes}`;
 }
 
-function RecordCard({
+const RecordCard = React.memo(function RecordCard({
   record,
   onReport,
 }: {
@@ -157,7 +157,7 @@ function RecordCard({
       )}
     </View>
   );
-}
+});
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -180,12 +180,26 @@ export default function HistoryScreen() {
 
   const handleReport = useCallback(
     async (id: string, result: ResultKey) => {
-      console.log("[History] Reporting result:", id, result);
-      await updateBrewResult(id, result);
-      await queryClient.invalidateQueries({ queryKey: ["saved-suggestions"] });
+      console.log("[History] Reporting result for id:", id, "result:", result);
+      try {
+        await updateBrewResult(id, result);
+        console.log("[History] updateBrewResult succeeded for id:", id);
+        await queryClient.invalidateQueries({ queryKey: ["saved-suggestions"] });
+      } catch (error) {
+        console.error("[History] Failed to report result:", error);
+      }
     },
     [queryClient]
   );
+
+  const renderItem = useCallback(
+    ({ item }: { item: BrewRecord }) => (
+      <RecordCard record={item} onReport={handleReport} />
+    ),
+    [handleReport]
+  );
+
+  const keyExtractor = useCallback((item: BrewRecord) => item.id, []);
 
   return (
     <View style={styles.screen} testID="history-screen">
@@ -212,11 +226,8 @@ export default function HistoryScreen() {
         ) : (
           <FlatList
             data={records}
-            keyExtractor={(item, index) => `${item.id}-${index}`}
-            renderItem={({ item }) => (
-              <RecordCard record={item} onReport={handleReport} />
-            )}
-            extraData={records}
+            keyExtractor={keyExtractor}
+            renderItem={renderItem}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             testID="history-list"
