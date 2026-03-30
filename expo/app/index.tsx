@@ -291,17 +291,8 @@ export default function HomeScreen() {
     setForm((f) => ({ ...f, taste: value, helperTaste: value }));
   }, []);
 
-  const handleHelperSelect = useCallback((value: HelperTasteKey | "none") => {
+  const handleHelperSelect = useCallback((value: HelperTasteKey) => {
     void Haptics.selectionAsync();
-    if (value === "none") {
-      // "unclear" maps to fallback-004
-      setForm((f) => ({ ...f, helperTaste: null, taste: null }));
-      // Proceed with taste = null, will hit fallback
-      setShowHelperTaste(false);
-      // Set a special flag so we know it's "unclear"
-      setForm((f) => ({ ...f, taste: "thin" as TasteKey, helperTaste: null }));
-      return;
-    }
     const tasteMap: Record<HelperTasteKey, TasteKey> = {
       sour: "sour",
       bitter: "bitter",
@@ -681,7 +672,7 @@ export default function HomeScreen() {
                   title={diagStepLabel}
                   description="迷うときは、最も気になった感覚を1つ選んでください"
                   options={helperTasteOptions}
-                  selectedValue={(form.helperTaste ?? null) as (HelperTasteKey | "none") | null}
+                  selectedValue={form.helperTaste ?? null}
                   onSelect={handleHelperSelect}
                   testId="helper-selector"
                 />

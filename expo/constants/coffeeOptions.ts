@@ -29,12 +29,11 @@ export const tasteOptions: Option<TasteKey | "unknown">[] = [
   },
 ];
 
-export const helperTasteOptions: Option<HelperTasteKey | "none">[] = [
+export const helperTasteOptions: Option<HelperTasteKey>[] = [
   { value: "sour", label: "口がキュッとする" },
   { value: "bitter", label: "後味が渋い" },
   { value: "thin", label: "水っぽい" },
   { value: "aroma_weak", label: "香りが弱い" },
-  { value: "none", label: "どれも当てはまらない" },
 ];
 
 export const equipmentOptions: Option<EquipmentKey>[] = [
